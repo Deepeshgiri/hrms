@@ -41,7 +41,7 @@ export class LeaveService {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/re-calculate-leaves", {})
     }
 
-    acceptRejectLeave(leaveId: string, status: string, response: string, userId: string) {
+    acceptRejectLeave(leaveId: string | number, status: string, response: string, userId: string | number) {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/", { leaveId, status, response, userId })
     }
 
@@ -49,7 +49,7 @@ export class LeaveService {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-leave", data)
     }
 
-    deleteLeave(leaveId: string) {
+    deleteLeave(leaveId: string | number) {
         return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/" + leaveId)
     }
 

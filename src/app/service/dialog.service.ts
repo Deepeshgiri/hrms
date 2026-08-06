@@ -1,16 +1,33 @@
 import { Injectable } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { SimpleDialogComponent } from '../components/simple-dialog/simple-dialog.component';
+
+export interface DialogOptions {
+  content: string;
+  title?: string;
+  callBack?: () => void;
+  width?: string;
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DialogService {
-  constructor() { }
+  constructor(private dialog: MatDialog) {}
 
-  openDialog(data: any): void {
-    // Stub implementation
-  }
+  showDialog(options: DialogOptions) {
+    const dialogRef = this.dialog.open(SimpleDialogComponent, {
+      width: options.width || '400px',
+      data: {
+        content: options.content,
+        title: options.title || 'Message',
+      },
+    });
 
-  closeDialog(): void {
-    // Stub implementation
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result && options.callBack) {
+        options.callBack();
+      }
+    });
   }
 }

@@ -1,14 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { AppConstants } from '../../../../AppConstants';
-import { CoreService } from '../../../../service/core.service';
-import { DateTimeFormatService } from '../../../../service/DateTimeFormatService';
-import { DialogService } from '../../../../service/dialog.service';
+import { AppConstants } from '../../../AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { DateTimeFormatService } from '../../../service/DateTimeFormatService';
+import { DialogService } from '../../../service/dialog.service';
 import { permissionsObject, Permissions } from '../../../user.modal';
 import { UsersService } from '../../../users.service';
 
 @Component({
+  standalone: false,
   selector: 'app-user-attendance',
   templateUrl: './user-attendance.component.html',
   styleUrls: ['./user-attendance.component.css']

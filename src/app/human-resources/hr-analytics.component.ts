@@ -13,6 +13,7 @@ interface OverviewData {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-hr-analytics',
   templateUrl: './hr-analytics.component.html',
   styleUrls: ['./hr-analytics.component.css']

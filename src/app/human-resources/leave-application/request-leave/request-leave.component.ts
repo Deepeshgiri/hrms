@@ -4,6 +4,7 @@ import { LeaveForm } from '../leave.modal';
 import { LeaveService } from '../leave.service';
 
 @Component({
+  standalone: false,
   selector: 'app-request-leave',
   templateUrl: './request-leave.component.html',
   styleUrls: ['./request-leave.component.css']

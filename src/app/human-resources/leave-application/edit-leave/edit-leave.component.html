@@ -1,21 +1,24 @@
 <form #leaveForm="ngForm" (ngSubmit)="updateLeave(leaveForm.value)">
-    <ckeditor [editor]="Editor" name="leaveContent" [(ngModel)]="leave.leaveContent" required></ckeditor>
+    <mat-form-field class="full-width">
+        <mat-label>Leave Content</mat-label>
+        <textarea name="leaveContent" rows="5" matInput [(ngModel)]="leave.leaveContent" required></textarea>
+    </mat-form-field>
     <div style="height:10px"></div>
     <div class="row">
         <div class="col-sm-3">
             <mat-form-field>
-                <input name="fromDate" [(ngModel)]="fromDate" matInput [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1"
+                <input name="fromDate" [(ngModel)]="fromDate" matInput [matDatepicker]="fromPicker"
                     placeholder="From Date" required>
-                <span matSuffix class="material-icons">calendar_today</span>
-                <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+                <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+                <mat-datepicker #fromPicker></mat-datepicker>
             </mat-form-field>
         </div>
         <div class="col-sm-3">
             <mat-form-field>
-                <input name="toDate" [(ngModel)]="toDate" matInput [owlDateTime]="dt2" [owlDateTimeTrigger]="dt2"
+                <input name="toDate" [(ngModel)]="toDate" matInput [matDatepicker]="toPicker"
                     placeholder="To Date" required>
-                <span matSuffix class="material-icons">calendar_today</span>
-                <owl-date-time #dt2 [pickerType]="'calendar'"></owl-date-time>
+                <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+                <mat-datepicker #toPicker></mat-datepicker>
             </mat-form-field>
         </div>
         <div class="col-sm-3">

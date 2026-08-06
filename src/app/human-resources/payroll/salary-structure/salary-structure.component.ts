@@ -3,6 +3,7 @@ import { CoreService } from '../../../service/core.service';
 import { AppConstants } from '../../../AppConstants';
 
 @Component({
+  standalone: false,
   selector: 'app-salary-structure',
   templateUrl: './salary-structure.component.html',
   styleUrls: ['./salary-structure.component.css']

@@ -4,6 +4,7 @@ import { Leave, LeavesInfo } from '../leave.modal';
 import { LeaveService } from '../leave.service';
 
 @Component({
+  standalone: false,
   selector: 'app-leave-home',
   templateUrl: './leave-home.component.html',
   styleUrls: ['./leave-home.component.css']

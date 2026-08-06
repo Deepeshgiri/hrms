@@ -3,6 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { BiometricUser } from './biometric.modal';
 
 @Component({
+  standalone: false,
   selector: 'app-employee-selection-dialog',
   template: `
     <h2 mat-dialog-title>Map Employee to Biometric Punch</h2>

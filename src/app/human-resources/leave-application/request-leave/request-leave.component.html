@@ -23,27 +23,27 @@
                 <ng-container *ngIf="duration.value=='R'">
                     <div class="col-sm-3">
                         <mat-form-field>
-                            <input name="fromDate" ngModel matInput [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1"
+                            <input name="fromDate" ngModel matInput [matDatepicker]="fromPicker"
                                 placeholder="From Date" required>
-                            <span matSuffix class="material-icons">calendar_today</span>
-                            <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+                            <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+                            <mat-datepicker #fromPicker></mat-datepicker>
                         </mat-form-field>
                     </div>
                     <div class="col-sm-3">
                         <mat-form-field>
-                            <input name="toDate" ngModel matInput [owlDateTime]="dt2" [owlDateTimeTrigger]="dt2"
+                            <input name="toDate" ngModel matInput [matDatepicker]="toPicker"
                                 placeholder="To Date" required>
-                            <span matSuffix class="material-icons">calendar_today</span>
-                            <owl-date-time #dt2 [pickerType]="'calendar'"></owl-date-time>
+                            <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+                            <mat-datepicker #toPicker></mat-datepicker>
                         </mat-form-field>
                     </div>
                 </ng-container>
                 <div class="col-sm-3" *ngIf="duration.value!='R'">
                     <mat-form-field>
-                        <input name="date" ngModel matInput [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1"
+                        <input name="date" ngModel matInput [matDatepicker]="datePicker"
                             placeholder="Date" required>
-                        <span matSuffix class="material-icons">calendar_today</span>
-                        <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+                        <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+                        <mat-datepicker #datePicker></mat-datepicker>
                     </mat-form-field>
                 </div>
                 <div class="col-sm-3" *ngIf="duration.value=='H'">

@@ -3,6 +3,7 @@ import { DialogService } from 'src/app/service/dialog.service';
 import { LeaveService } from '../leave.service';
 
 @Component({
+  standalone: false,
   selector: 'app-institute-holidays',
   templateUrl: './institute-holidays.component.html',
   styleUrls: ['./institute-holidays.component.css']
@@ -48,13 +49,23 @@ export class InstituteHolidaysComponent implements OnInit {
 
   //Submit
   submit() {
-    let date = new Date(this.date + " UTC").toISOString().substring(0, 10)
+    const dateStr = this.toYmd(this.date);
+    if (!dateStr) return;
     this.loading = true
-    this.leaveService.addInstituteHoliday(date).subscribe((result: any) => {
+    this.leaveService.addInstituteHoliday(dateStr).subscribe((result: any) => {
       this.loading = false
       this.getHolidays()
       this.dialog.showDialog({ content: result.message })
     })
+  }
+
+  private toYmd(d: any): string | null {
+    if (!d) return null;
+    const dt = d instanceof Date ? d : new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
 }

@@ -1,15 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
 import { AppConstants } from '../../../AppConstants';
 import { CoreService } from '../../../service/core.service';
-import { LoadingComponent } from '../../../components/loading/loading.component';
+import { PinnacleCommonModule } from '../../../pinnacle-common.module';
 
 @Component({
   selector: 'app-users-leaves',
   templateUrl: './users-leaves.component.html',
   styleUrls: ['./users-leaves.component.css'],
   standalone: true,
-  imports: [CommonModule, DatePipe, LoadingComponent]
+  imports: [PinnacleCommonModule]
 })
 export class UsersLeavesComponent implements OnInit {
 

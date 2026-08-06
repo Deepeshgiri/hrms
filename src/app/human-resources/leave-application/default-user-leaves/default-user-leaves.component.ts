@@ -3,6 +3,7 @@ import { AppConstants } from 'src/app/AppConstants';
 import { CoreService } from 'src/app/service/core.service';
 
 @Component({
+  standalone: false,
   selector: 'app-default-user-leaves',
   templateUrl: './default-user-leaves.component.html',
   styleUrls: ['./default-user-leaves.component.css']

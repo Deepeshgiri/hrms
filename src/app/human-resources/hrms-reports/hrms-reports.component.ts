@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { HrmsReportsService } from '../../../service/hrmsReportsService';
+import { HrmsReportsService } from '../../service/hrmsReportsService';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
+  standalone: false,
   selector: 'app-hrms-reports',
   templateUrl: './hrms-reports.component.html',
   styleUrls: ['./hrms-reports.component.css']

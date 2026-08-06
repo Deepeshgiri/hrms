@@ -8,6 +8,9 @@ import { SetTimingsComponent } from './set-timings/set-timings.component';
 import { ManualAttendanceComponent } from './manual-attendance/manual-attendance.component';
 import { HrmsReportsComponent } from '../hrms-reports/hrms-reports.component';
 import { CoreService } from '../../service/core.service';
+import { PinnacleCommonModule } from '../../pinnacle-common.module';
+import { MaterialModule } from '../../material.module';
+import { FullCalendarModule } from '@fullcalendar/angular';
 
 const routes: Routes = [
     { path: "", component: UserAttendanceComponent },
@@ -29,6 +32,9 @@ const routes: Routes = [
     imports: [
         CommonModule,
         HttpClientModule,
+        PinnacleCommonModule,
+        MaterialModule,
+        FullCalendarModule,
         RouterModule.forChild(routes)
     ],
     providers: [CoreService],

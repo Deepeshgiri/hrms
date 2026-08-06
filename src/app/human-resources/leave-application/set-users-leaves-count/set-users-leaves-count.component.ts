@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from '../../../../AppConstants';
-import { CoreService } from '../../../../service/core.service';
-import { DialogService } from '../../../../service/dialog.service';
+import { AppConstants } from '../../../AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { DialogService } from '../../../service/dialog.service';
 import { LeaveService } from '../leave.service';
 
 @Component({
+  standalone: false,
   selector: 'app-set-users-leaves-count',
   templateUrl: './set-users-leaves-count.component.html',
   styleUrls: ['./set-users-leaves-count.component.css']
@@ -57,7 +58,7 @@ export class SetUsersLeavesCountComponent implements OnInit {
   reCalculate(): void {
     this.loading = true;
     this.leaveService.reCalculateLeaves().subscribe((result: any) => {
-      this.dialog.openDialog({ content: result.message });
+      this.dialog.showDialog({ content: result.message });
       this.loading = false;
     });
   }

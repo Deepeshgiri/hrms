@@ -8,6 +8,7 @@ import { BiometricUser, BiometricMapRequest } from './biometric.modal';
 import { EmployeeSelectionDialogComponent } from './employee-selection-dialog.component';
 
 @Component({
+  standalone: false,
   selector: 'app-biometric-punches',
   templateUrl: './biometric-punches.component.html',
   styleUrls: ['./biometric-punches.component.css']

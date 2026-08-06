@@ -3,6 +3,7 @@ import { CoreService } from '../../../service/core.service';
 import { AppConstants } from '../../../AppConstants';
 
 @Component({
+  standalone: false,
   selector: 'app-payroll-home',
   templateUrl: './payroll-home.component.html',
   styleUrls: ['./payroll-home.component.css']

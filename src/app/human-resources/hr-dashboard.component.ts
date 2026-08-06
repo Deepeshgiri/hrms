@@ -4,6 +4,7 @@ import { AppConstants } from 'src/app/AppConstants';
 import { permissionsObject ,Permissions} from '../user.modal';
 
 @Component({
+  standalone: false,
   selector: 'app-hr-dashboard',
   templateUrl: './hr-dashboard.component.html',
   styleUrls: ['./hr-dashboard.component.css']

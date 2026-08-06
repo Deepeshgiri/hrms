@@ -2,16 +2,15 @@ import { Component, Input, OnInit } from '@angular/core';
 import { DialogService } from 'src/app/service/dialog.service';
 import { Leave } from '../leave.modal';
 import { LeaveService } from '../leave.service';
-import Editor from 'ckeditor5/build/ckeditor';
 
 @Component({
+  standalone: false,
   selector: 'edit-leave',
   templateUrl: './edit-leave.component.html',
   styleUrls: ['./edit-leave.component.css']
 })
 export class EditLeaveComponent implements OnInit {
 
-  public Editor = Editor
   @Input() leave: Leave
   @Input() modal: { editLeave: boolean }
 

@@ -118,14 +118,17 @@
         <!-- Filters -->
         <div class="filter-section">
           <mat-form-field appearance="outline">
-            <mat-label>Select Date Range</mat-label>
+            <mat-label>Start Date</mat-label>
+            <input matInput [matDatepicker]="startPicker" [(ngModel)]="dateRange[0]">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
 
-            <input matInput [(ngModel)]="dateRange"
-                   [selectMode]="'range'"
-                   [owlDateTimeTrigger]="dt10"
-                   [owlDateTime]="dt10">
-
-            <owl-date-time #dt10></owl-date-time>
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input matInput [matDatepicker]="endPicker" [(ngModel)]="dateRange[1]">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
           </mat-form-field>
 
           <button mat-raised-button color="primary" (click)="loadMonthlyReport()">

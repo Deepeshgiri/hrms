@@ -11,7 +11,8 @@ import { InstituteHolidaysComponent } from './institute-holidays/institute-holid
 import { DefaultUserLeavesComponent } from './default-user-leaves/default-user-leaves.component';
 import { AllotLeavesComponent } from './allot-leaves/allot-leaves.component';
 import { CoreService } from '../../service/core.service';
-import { LoadingComponent } from '../../components/loading/loading.component';
+import { PinnacleCommonModule } from '../../pinnacle-common.module';
+import { MaterialModule } from '../../material.module';
 
 const routes: Routes = [
     { path: "", component: LeaveHomeComponent },
@@ -37,7 +38,8 @@ const routes: Routes = [
     imports: [
         CommonModule,
         HttpClientModule,
-        LoadingComponent,
+        PinnacleCommonModule,
+        MaterialModule,
         RouterModule.forChild(routes)
     ],
     providers: [CoreService],

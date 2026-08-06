@@ -7,6 +7,7 @@ import {PinnacleCommonModule} from 'src/app/pinnacle-common.module';
 
 @Component({
  templateUrl: './analytics-component.html',
+ standalone: false,
 })
 class AnalyticsComponent implements OnInit {
   loading = false;

@@ -4,6 +4,7 @@ import { CoreService } from 'src/app/service/core.service';
 import { AppConstants } from 'src/app/AppConstants';
 
 @Component({
+  standalone: false,
   selector: 'app-biometric',
   templateUrl: './biometric.component.html',
   styleUrls: ['./biometric.component.css']

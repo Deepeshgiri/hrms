@@ -4,6 +4,7 @@ import { AppConstants } from '../../../AppConstants';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
+  standalone: false,
   selector: 'app-payslips',
   templateUrl: './payslips.component.html',
   styleUrls: ['./payslips.component.css']

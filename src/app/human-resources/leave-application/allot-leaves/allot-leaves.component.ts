@@ -4,6 +4,7 @@ import { CoreService } from 'src/app/service/core.service';
 import { LeaveService } from '../leave.service';
 
 @Component({
+  standalone: false,
   selector: 'app-allot-leaves',
   templateUrl: './allot-leaves.component.html',
   styleUrls: ['./allot-leaves.component.css']

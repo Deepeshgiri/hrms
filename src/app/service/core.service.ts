@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CoreService {
   constructor(private http: HttpClient) {}
@@ -22,9 +22,5 @@ export class CoreService {
 
   deleteRequest(url: string): Observable<any> {
     return this.http.delete(url);
-  }
-
-  patchRequest(url: string, data: any): Observable<any> {
-    return this.http.patch(url, data);
   }
 }

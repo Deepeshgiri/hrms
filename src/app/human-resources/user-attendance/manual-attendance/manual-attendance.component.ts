@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CoreService } from '../../../../service/core.service';
-import { AppConstants } from '../../../../AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { AppConstants } from '../../../AppConstants';
 
 @Component({
+  standalone: false,
   selector: 'app-manual-attendance',
   templateUrl: './manual-attendance.component.html',
   styleUrls: ['./manual-attendance.component.css']

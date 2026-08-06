@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from '../../../../AppConstants';
-import { CoreService } from '../../../../service/core.service';
-import { DateTimeFormatService } from '../../../../service/DateTimeFormatService';
+import { AppConstants } from '../../../AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { DateTimeFormatService } from '../../../service/DateTimeFormatService';
 
 @Component({
+  standalone: false,
   selector: 'app-user-attendance-today',
   templateUrl: './user-attendance-today.component.html',
   styleUrls: ['./user-attendance-today.component.css']

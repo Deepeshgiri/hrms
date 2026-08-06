@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
-import { AppConstants } from "src/app/AppConstants";
-import { CoreService } from "src/app/service/core.service";
+import { AppConstants } from "../../AppConstants";
+import { CoreService } from "../../service/core.service";
 import { LeaveForm, UsersLeavesInfo } from "./leave.modal";
 
 @Injectable({
@@ -41,19 +41,19 @@ export class LeaveService {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/re-calculate-leaves", {})
     }
 
-    acceptRejectLeave(leaveId, status, response, userId) {
+    acceptRejectLeave(leaveId: string, status: string, response: string, userId: string) {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/", { leaveId, status, response, userId })
     }
 
-    updateLeave(data) {
+    updateLeave(data: any) {
         return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-leave", data)
     }
 
-    deleteLeave(leaveId) {
+    deleteLeave(leaveId: string) {
         return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/" + leaveId)
     }
 
-    addInstituteHoliday(date){
+    addInstituteHoliday(date: string){
         return this.coreService.postRequest(AppConstants.API_URL+"leaves/institute-holiday",{date})
     }
 
@@ -61,7 +61,7 @@ export class LeaveService {
         return this.coreService.getRequest(AppConstants.API_URL+"leaves/institute-holidays")
     }
 
-    deleteInstituteHoliday(date){
+    deleteInstituteHoliday(date: string){
         return this.coreService.deleteRequest(AppConstants.API_URL+"leaves/institute-holiday/"+date)
     }
 

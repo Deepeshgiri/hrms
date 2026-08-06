@@ -23,7 +23,7 @@ export class SalaryStructureComponent implements OnInit {
     deductions: []
   };
 
-  constructor(private coreService: CoreService) {}
+  constructor(private coreService: CoreService) { }
 
   ngOnInit(): void {
     this.loadSalaryStructures();

@@ -1,13 +1,20 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule, Routes } from '@angular/router';
-import { PinnacleCommonModule } from 'src/app/pinnacle-common.module';
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
 import { PayslipsComponent } from './payslips/payslips.component';
 import { SalaryStructureComponent } from './salary-structure/salary-structure.component';
 import { PayrollHomeComponent } from './payroll-home/payroll-home.component';
-import { MaterialModule } from 'src/app/material.module';
-import { CoreService } from 'src/app/service/core.service';
+import { CoreService } from '../../service/core.service';
+import { LoadingComponent } from '../../components/loading/loading.component';
 
 const routes: Routes = [
   { path: '', component: PayrollHomeComponent },
@@ -17,7 +24,21 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [PayslipsComponent, SalaryStructureComponent, PayrollHomeComponent],
-  imports: [CommonModule, HttpClientModule, PinnacleCommonModule, RouterModule.forChild(routes), MaterialModule],
+  imports: [
+    CommonModule,
+    HttpClientModule,
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatDividerModule,
+    MatListModule,
+    MatCardModule,
+    MatButtonModule,
+    DecimalPipe,
+    LoadingComponent,
+    RouterModule.forChild(routes)
+  ],
   providers: [CoreService]
 })
 export class PayrollModule { }

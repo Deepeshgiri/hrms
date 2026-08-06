@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from 'src/app/AppConstants';
-import { CoreService } from 'src/app/service/core.service';
-import { DialogService } from 'src/app/service/dialog.service';
+import { AppConstants } from '../../../../AppConstants';
+import { CoreService } from '../../../../service/core.service';
+import { DialogService } from '../../../../service/dialog.service';
 
 @Component({
   selector: 'app-set-timings',

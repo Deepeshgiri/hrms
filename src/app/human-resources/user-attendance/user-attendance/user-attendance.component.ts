@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import { AppConstants } from 'src/app/AppConstants';
-import { CoreService } from 'src/app/service/core.service';
-import { DateTimeFormatService } from 'src/app/service/DateTimeFormatService';
-import { DialogService } from 'src/app/service/dialog.service';
+import { AppConstants } from '../../../../AppConstants';
+import { CoreService } from '../../../../service/core.service';
+import { DateTimeFormatService } from '../../../../service/DateTimeFormatService';
+import { DialogService } from '../../../../service/dialog.service';
 import { permissionsObject, Permissions } from '../../../user.modal';
 import { UsersService } from '../../../users.service';
 
@@ -15,10 +15,10 @@ import { UsersService } from '../../../users.service';
 })
 export class UserAttendanceComponent implements OnInit {
   loading: boolean = true
-  users = []
-  events = []
-  monthlyAttendance = []
-  masterMonthlyAttendance = []
+  users: any[] = []
+  events: any[] = []
+  monthlyAttendance: any[] = []
+  masterMonthlyAttendance: any[] = []
 
   monthlyDate = new Date()
 
@@ -59,13 +59,13 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   // Load Attendance 
-  loadAttendance(userId) {
+  loadAttendance(userId: string) {
     this.loading = true
     this.coreService.getRequest(AppConstants.API_URL + `users/${userId}/attendance`).subscribe((data: any) => {
-      const daysObj = {}
+      const daysObj: { [key: string]: any[] } = {}
       const entries = data.entries
       const fromToTime = data.from_to_time
-      entries.forEach(d => {
+      entries.forEach((d: any) => {
         const date = new Date(d.datetime)
         const dmy = "" + date.getDate() + (date.getMonth() + 1) + date.getFullYear()
         dmy in daysObj ? daysObj[dmy].push(d.datetime) : daysObj[dmy] = [d.datetime]
@@ -77,7 +77,7 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   //Load Monthly attendance
-  loadMonthlyAttendance(userId) {
+  loadMonthlyAttendance(userId: string) {
     this.loading = true
     this.coreService.getRequest(AppConstants.API_URL + `users/${userId}/monthly-attendance`).subscribe((data: any) => {
       this.monthlyAttendance = data
@@ -88,15 +88,16 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   //Get FIrst and last entry
-  getFirstAndLastEntries(array) {
+  getFirstAndLastEntries(array: string): string {
     if (array) {
       let entries = array.split(",");
       return entries[0] + " - " + entries[entries.length - 1]
     }
+    return ''
   }
 
   //get minutes spent 
-  getMinutesSpent(date, datetime) {
+  getMinutesSpent(date: string, datetime: string): number {
     let entries = datetime.split(",");
     let entry = new Date(date + " " + entries[0].substr(0, 5));
     let exit = new Date(date + " " + entries[entries.length - 1].substr(0, 5));
@@ -105,7 +106,7 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   //change date and filter attendance
-  changeDate(direction) {
+  changeDate(direction: string) {
     let month = 0
 
     if (direction == 'next') {
@@ -129,7 +130,7 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   //On click on date entry show popup 
-  handleDateClick(data) {
+  handleDateClick(data: any) {
     const date = this.dateTimeService.getFormattedDate(data.event.start)
     this.dialog.showDialog({ content: data.event.extendedProps.message, title: date + " Details" })
   }
@@ -137,10 +138,10 @@ export class UserAttendanceComponent implements OnInit {
   //get attendance
   getAttendance() {
     this.coreService.getRequest(AppConstants.API_URL + "users/attendance").subscribe((data: any) => {
-      const daysObj = {}
+      const daysObj: { [key: string]: any[] } = {}
       const entries = data.entries
       const fromToTime = data.from_to_time
-      entries.forEach(d => {
+      entries.forEach((d: any) => {
         const date = new Date(d.datetime)
         const dmy = "" + date.getDate() + (date.getMonth() + 1) + date.getFullYear()
         dmy in daysObj ? daysObj[dmy].push(d.datetime) : daysObj[dmy] = [d.datetime]
@@ -151,7 +152,7 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   //Insert events
-  insertEvents(daysObj, fromToTime) {
+  insertEvents(daysObj: { [key: string]: any[] }, fromToTime: any) {
     for (let key in daysObj) {
       let msg = this.getHourAndMinutes(daysObj[key])
       const color = this.getColor(daysObj[key][0], fromToTime)
@@ -165,7 +166,7 @@ export class UserAttendanceComponent implements OnInit {
     }
   }
   // get hours and minutes from date
-  getHourAndMinutes(dates) {
+  getHourAndMinutes(dates: any[]): string {
     let msg = ""
     for (let date of dates) {
       let dt = new Date(date)
@@ -179,7 +180,7 @@ export class UserAttendanceComponent implements OnInit {
   }
 
   // get color based on if late or early
-  getColor(entryDate, fromToTime) {
+  getColor(entryDate: string, fromToTime: any): string {
     if (!fromToTime)
       return "black"
     const fromTime = fromToTime.fromTime

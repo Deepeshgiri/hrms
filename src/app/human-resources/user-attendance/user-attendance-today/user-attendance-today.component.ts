@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from 'src/app/AppConstants';
-import { CoreService } from 'src/app/service/core.service';
-import { DateTimeFormatService } from 'src/app/service/DateTimeFormatService';
+import { AppConstants } from '../../../../AppConstants';
+import { CoreService } from '../../../../service/core.service';
+import { DateTimeFormatService } from '../../../../service/DateTimeFormatService';
 
 @Component({
   selector: 'app-user-attendance-today',
@@ -11,7 +11,7 @@ import { DateTimeFormatService } from 'src/app/service/DateTimeFormatService';
 export class UserAttendanceTodayComponent implements OnInit {
 
   loading: boolean = true
-  attendance = []
+  attendance: any[] = []
 
   constructor(private coreService: CoreService, private dateTimeService: DateTimeFormatService) { }
 
@@ -28,7 +28,7 @@ export class UserAttendanceTodayComponent implements OnInit {
   }
 
   // get entry color based on if users was late or early or on time  
-  getEntryColor(entryTime, fromToTime, entryIndex, totalEntries) {
+  getEntryColor(entryTime: string, fromToTime: any, entryIndex: number, totalEntries: number): string {
     if(!fromToTime)
       return "black"
     const entryDateTime = new Date(this.dateTimeService.getFormattedDate(new Date()) + " " + entryTime)

@@ -1,11 +1,15 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { AppConstants } from '../../../AppConstants';
 import { CoreService } from '../../../service/core.service';
+import { LoadingComponent } from '../../../components/loading/loading.component';
 
 @Component({
   selector: 'app-users-leaves',
   templateUrl: './users-leaves.component.html',
-  styleUrls: ['./users-leaves.component.css']
+  styleUrls: ['./users-leaves.component.css'],
+  standalone: true,
+  imports: [CommonModule, DatePipe, LoadingComponent]
 })
 export class UsersLeavesComponent implements OnInit {
 

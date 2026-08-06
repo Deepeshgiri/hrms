@@ -1,0 +1,37 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <div class="row attendance-row" *ngIf="permissions.hrms_reports">
+        <select class="select"
+            (change)="loadAttendance($event.target.value);loadMonthlyAttendance($event.target.value)">
+            <option>Select User</option>
+            <option *ngFor="let u of users" [value]="u.userId">{{u.name}}</option>
+        </select>
+    </div>
+    <div class="row">
+        <div class="col-sm-6 pr" id="full-calendar">
+            <full-calendar #mycal [deepChangeDetection]="true" [options]="calendarOptions"></full-calendar>
+        </div>
+        <div class="col-sm-6 pl" *ngIf="permissions.hrms_reports">
+            <div class="content-title row justify-content-between">Monthly Attendance
+                <div class="monthly-attendance-nav">
+                    <mat-icon (click)="changeDate('prev')">navigate_before</mat-icon>
+                    <mat-icon (click)="changeDate('next')">navigate_next</mat-icon>
+                </div>
+            </div>
+            <table class="pinnacle-table">
+                <tr>
+                    <th>Date</th>
+                    <th>Entries</th>
+                    <th class="minutes">Minutes Spend</th>
+                </tr>
+                <tr *ngFor="let item of monthlyAttendance">
+                    <td>{{item.date}}</td>
+                    <td>{{getFirstAndLastEntries(item.datetime)}}</td>
+                    <td class="minutes">{{getMinutesSpent(item.date,item.datetime)}}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<loading [show]="loading"></loading>

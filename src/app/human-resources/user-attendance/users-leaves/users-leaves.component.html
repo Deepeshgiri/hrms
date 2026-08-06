@@ -1,0 +1,32 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <div class="content-title row justify-content-between align-items-center ">Users Leaves
+        <div class="input-field-date">
+            <mat-icon id="date-prev" (click)="changeDate('prev')">navigate_before</mat-icon>
+            <input name="inquiryDate" (dateTimeChange)="filterLeaves()" [(ngModel)]="date"
+                class="input-field" ngModel [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1" placeholder="Schedule Date"
+                required>
+            <mat-icon id="date-next" (click)="changeDate('next')">navigate_next</mat-icon>
+            <span matSuffix class="material-icons">calendar_today</span>
+            <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+        </div>
+    </div>
+    <table class="pinnacle-table">
+        <tr>
+            <th>Name</th>
+            <th>Allowed Leaves</th>
+            <th>Taken Leaves</th>
+            <th>Untold Leaves</th>
+            <th>Days to Deduct</th>
+        </tr>
+        <tr *ngFor="let ul of usersLeaves">
+            <td [innerText]="ul.name"></td>
+            <td [innerText]="3"></td>
+            <td [innerText]="ul.takenLeaves"></td>
+            <td [innerText]="ul.untoldLeaves"></td>
+            <td [innerText]="ul.moreLeavesThanAllowed+ul.untoldLeaves*2"></td>
+        </tr>
+    </table>
+</div>
+<loading [show]="loading"></loading>

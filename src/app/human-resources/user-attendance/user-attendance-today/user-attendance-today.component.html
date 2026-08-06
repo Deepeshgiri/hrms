@@ -1,0 +1,18 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <table class="pinnacle-table big-heading">
+        <tr>
+            <th>User Name</th>
+            <th>Entries</th>
+        </tr>
+        <tr *ngFor="let a of attendance">
+            <td>{{a.name}}</td>
+            <td>
+                <div *ngFor="let e of a.entries;let i = index" [ngStyle]="{backgroundColor:getEntryColor(e.entry,a.from_to_time,i,a.entries.length),color:'#fff'}"
+                    class='assigned-items'>{{e.entry}}</div>
+            </td>
+        </tr>
+    </table>
+</div>
+<loading [show]="loading"></loading>

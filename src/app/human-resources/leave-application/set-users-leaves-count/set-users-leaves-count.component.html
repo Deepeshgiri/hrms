@@ -1,0 +1,23 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <div class="row filter-row">
+        <select class="select" [(ngModel)]="userId" (change)="loadLeaves()">
+            <option value="">Select User</option>
+            <option *ngFor="let r of users" [value]="r.userId">{{r.name}}</option>
+        </select>
+        <button mat-raised-button [disabled]="!userId" (click)="updateLeave()">Update</button>
+    </div>
+    <div class="content-title row justify-content-between align-items-center">User Leaves 
+        <button mat-raised-button (click)="reCalculate()" >Recalculate Leaves</button> </div>
+    <div class="content-box months" *ngIf="activeLeave">
+
+        <mat-form-field *ngFor="let l of activeLeave">
+            <mat-label [innerText]="l.month + ' Leaves'"></mat-label>
+            <input matInput [(ngModel)]="l.leaves">
+        </mat-form-field>
+
+    </div>
+</div>
+
+<loading [show]="loading"></loading>

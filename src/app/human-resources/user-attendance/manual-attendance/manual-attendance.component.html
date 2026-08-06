@@ -1,0 +1,112 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+
+<div id="page-content">
+  <mat-card class="">
+    <mat-card-header>
+      <mat-card-title>Manual Attendance Entry</mat-card-title>
+      <mat-card-subtitle>Manually record attendance for an employee.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="form-row">
+        <!-- Employee Selection -->
+        <mat-form-field appearance="outline">
+          <mat-label>Employee</mat-label>
+          <mat-select [(ngModel)]="selectedUserId" required>
+            <mat-option *ngFor="let user of users" [value]="user.userId">
+              {{user.name}} ({{user.employeeId}})
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>person</mat-icon>
+        </mat-form-field>
+
+        <!-- Attendance Date -->
+        <mat-form-field appearance="outline">
+          <mat-label>Attendance Date</mat-label>
+          <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" required>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <!-- Attendance Status -->
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="status">
+            <mat-option value="Present">Present</mat-option>
+            <mat-option value="Absent">Absent</mat-option>
+            <mat-option value="Late">Late</mat-option>
+            <mat-option value="Half Day">Half Day</mat-option>
+            <mat-option value="Work From Home">Work From Home</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Remarks -->
+        <mat-form-field appearance="outline">
+          <mat-label>Remarks</mat-label>
+          <input matInput [(ngModel)]="remarks" placeholder="Add any notes or reasons">
+        </mat-form-field>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Time Entry -->
+      <div class="time-options">
+        <mat-checkbox [(ngModel)]="useCheckIn">Set Check-in</mat-checkbox>
+        <mat-form-field appearance="outline" *ngIf="useCheckIn">
+          <mat-label>Check-in Time</mat-label>
+          <input matInput type="time" [(ngModel)]="checkInTime">
+        </mat-form-field>
+
+        <mat-checkbox [(ngModel)]="useCheckOut">Set Check-out</mat-checkbox>
+        <mat-form-field appearance="outline" *ngIf="useCheckOut">
+          <mat-label>Check-out Time</mat-label>
+          <input matInput type="time" [(ngModel)]="checkOutTime">
+        </mat-form-field>
+      </div>
+
+      <mat-divider *ngIf="selectedUserId && selectedDate"></mat-divider>
+
+      <!-- Summary -->
+      <mat-list class="summary-list" *ngIf="selectedUserId && selectedDate">
+        <mat-list-item>
+          <mat-icon matListItemIcon>person_outline</mat-icon>
+          <div matListItemTitle>{{getSelectedUserName()}}</div>
+          <div matListItemLine>Employee</div>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListItemIcon>calendar_today</mat-icon>
+          <div matListItemTitle>{{selectedDate | date:'fullDate'}}</div>
+          <div matListItemLine>Date</div>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListItemIcon>check_circle_outline</mat-icon>
+          <div matListItemTitle>{{status}}</div>
+          <div matListItemLine>Status</div>
+        </mat-list-item>
+        <mat-list-item *ngIf="useCheckIn">
+          <mat-icon matListItemIcon>access_time</mat-icon>
+          <div matListItemTitle>{{checkInTime}}</div>
+          <div matListItemLine>Check-in</div>
+        </mat-list-item>
+        <mat-list-item *ngIf="useCheckOut">
+          <mat-icon matListItemIcon>access_time_filled</mat-icon>
+          <div matListItemTitle>{{checkOutTime}}</div>
+          <div matListItemLine>Check-out</div>
+        </mat-list-item>
+      </mat-list>
+
+    </mat-card-content>
+
+    <mat-card-actions>
+      <button mat-stroked-button (click)="resetForm()" [disabled]="loading">Reset</button>
+      <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="loading || !selectedUserId || !selectedDate">
+        {{loading ? 'Saving...' : 'Save Attendance'}}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
+
+<loading [show]="loading"></loading>

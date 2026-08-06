@@ -1,0 +1,261 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+  <div class="content-title">
+    <span>🏢 Human Resources Management System</span>
+    <div class="dashboard-actions">
+      <button mat-icon-button (click)="refreshStats()" [disabled]="loading" matTooltip="Refresh Data">
+        <mat-icon [class.spinning]="loading">refresh</mat-icon>
+      </button>
+      <span class="last-updated">Last updated: {{lastUpdated | date:'short'}}</span>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="stats-grid">
+    <mat-card class="stat-card employees">
+      <mat-card-content>
+        <mat-icon>people</mat-icon>
+        <div class="stat-value">{{stats.totalEmployees}}</div>
+        <div class="stat-label">Total Employees</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card present">
+      <mat-card-content>
+        <mat-icon>check_circle</mat-icon>
+        <div class="stat-value">{{stats.presentToday}}</div>
+        <div class="stat-label">Present Today</div>
+        <div class="stat-percentage">{{getAttendancePercentage()}}%</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card leave">
+      <mat-card-content>
+        <mat-icon>event_busy</mat-icon>
+        <div class="stat-value">{{stats.onLeave}}</div>
+        <div class="stat-label">On Leave</div>
+        <div class="stat-percentage">{{getLeavePercentage()}}%</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card pending" [class.urgent]="stats.pendingLeaves > 5">
+      <mat-card-content>
+        <mat-icon>pending_actions</mat-icon>
+        <div class="stat-value">{{stats.pendingLeaves}}</div>
+        <div class="stat-label">Pending Approvals</div>
+      </mat-card-content>
+      <mat-card-actions *ngIf="stats.pendingLeaves > 0">
+        <a mat-button color="primary" routerLink="/users/human-resources/leaves/users-leaves">Review Now</a>
+      </mat-card-actions>
+    </mat-card>
+    <mat-card class="stat-card late" [class.warning]="stats.lateArrivals > 3">
+      <mat-card-content>
+        <mat-icon>schedule</mat-icon>
+        <div class="stat-value">{{stats.lateArrivals}}</div>
+        <div class="stat-label">Late Arrivals</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="action-grid">
+      <a mat-card class="action-card" routerLink="/users/human-resources/leaves/new-leave">
+        <mat-icon color="primary">add_circle_outline</mat-icon>
+        <span>Apply Leave</span>
+      </a>
+      <a mat-card class="action-card" routerLink="/users/human-resources/payroll/payslips">
+        <mat-icon color="primary">receipt_long</mat-icon>
+        <span>View Payslips</span>
+      </a>
+      <a mat-card class="action-card" routerLink="/users/human-resources/user-attendance/today">
+        <mat-icon color="primary">today</mat-icon>
+        <span>Today's Report</span>
+      </a>
+      <a mat-card class="action-card" routerLink="/users/human-resources/analytics">
+        <mat-icon color="primary">analytics</mat-icon>
+        <span>Analytics</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Core HR Modules -->
+  <div class="modules-section">
+    <mat-card class="hr-section">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>event_busy</mat-icon>
+        <mat-card-title>Leave Management</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="module-grid">
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves">
+            <mat-icon>list_alt</mat-icon>
+            <div class="module-button-text">
+              <span>My Leaves</span>
+              <small>View leave history</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/new-leave">
+            <mat-icon>add_circle_outline</mat-icon>
+            <div class="module-button-text">
+              <span>Apply Leave</span>
+              <small>Request new leave</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/users-leaves">
+            <mat-icon>how_to_reg</mat-icon>
+            <div class="module-button-text">
+              <span>Approve Leaves</span>
+              <small>Pending approvals</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/set-users-leaves" >
+            <mat-icon>settings</mat-icon>
+            <div class="module-button-text">
+              <span>Set Leave Count</span>
+              <small>Configure leave limits</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/allot-leaves">
+            <mat-icon>assignment_ind</mat-icon>
+            <div class="module-button-text">
+              <span>Allot Leaves</span>
+              <small>Allocate leaves to users</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/institute-holidays">
+            <mat-icon>event_available</mat-icon>
+            <div class="module-button-text">
+              <span>Institute Holidays</span>
+              <small>Manage holidays</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/leaves/default-users-leaves">
+            <mat-icon>rule</mat-icon>
+            <div class="module-button-text">
+              <span>Default Leave Rules</span>
+              <small>Set default policies</small>
+            </div>
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="hr-section">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>fact_check</mat-icon>
+        <mat-card-title>Attendance & Time Tracking</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="module-grid">
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/user-attendance">
+            <mat-icon>calendar_view_month</mat-icon>
+            <div class="module-button-text">
+              <span>Attendance</span>
+              <small>Monthly calendar</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/user-attendance/today">
+            <mat-icon>today</mat-icon>
+            <div class="module-button-text">
+              <span>Today's Report</span>
+              <small>Real-time status</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/user-attendance/set-timings">
+            <mat-icon>access_time</mat-icon>
+            <div class="module-button-text">
+              <span>Work Timings</span>
+              <small>Set office hours</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/user-attendance/manual">
+            <mat-icon>edit</mat-icon>
+            <div class="module-button-text">
+              <span>Manual Entry</span>
+              <small>Add/edit attendance</small>
+            </div>
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="hr-section">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>account_balance_wallet</mat-icon>
+        <mat-card-title>Payroll & Finance</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="module-grid">
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/payroll">
+            <mat-icon>payments</mat-icon>
+            <div class="module-button-text">
+              <span>Payroll Dashboard</span>
+              <small>Overview & stats</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/payroll/payslips">
+            <mat-icon>receipt_long</mat-icon>
+            <div class="module-button-text">
+              <span>Payslips</span>
+              <small>Generate & manage</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/payroll/salary-structure">
+            <mat-icon>account_balance</mat-icon>
+            <div class="module-button-text">
+              <span>Salary Structure</span>
+              <small>Manage salaries</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/increments">
+            <mat-icon>trending_up</mat-icon>
+            <div class="module-button-text">
+              <span>Increments</span>
+              <small>Salary increments</small>
+            </div>
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="hr-section">
+      <mat-card-header>
+        <mat-icon mat-card-avatar>analytics</mat-icon>
+        <mat-card-title>Reports & Analytics</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="module-grid">
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/analytics">
+            <mat-icon>bar_chart</mat-icon>
+            <div class="module-button-text">
+              <span>HR Analytics</span>
+              <small>View analytics</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/manage-users">
+            <mat-icon>people</mat-icon>
+            <div class="module-button-text">
+              <span>Employee Management</span>
+              <small>Manage employees</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/biometric">
+            <mat-icon>fingerprint</mat-icon>
+            <div class="module-button-text">
+              <span>Biometric Devices</span>
+              <small>Manage devices</small>
+            </div>
+          </a>
+          <a mat-stroked-button class="module-button" routerLink="/users/human-resources/punches">
+            <mat-icon>schedule</mat-icon>
+            <div class="module-button-text">
+              <span>Biometric Punches</span>
+              <small>View punches</small>
+            </div>
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+<loading [show]="loading"></loading>

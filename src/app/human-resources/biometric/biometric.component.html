@@ -1,0 +1,105 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+  <div class="content-title">
+    🔐 Biometric Device Management
+    <div class="title-actions">
+      <button mat-icon-button (click)="refreshData()" [disabled]="loading" matTooltip="Refresh Data">
+        <mat-icon [class.spinning]="loading">refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Device Statistics -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <mat-icon>devices</mat-icon>
+      <div class="stat-value">{{deviceStats.totalDevices}}</div>
+      <div class="stat-label">Total Devices</div>
+    </div>
+    <div class="stat-card active">
+      <mat-icon>check_circle</mat-icon>
+      <div class="stat-value">{{deviceStats.activeDevices}}</div>
+      <div class="stat-label">Active</div>
+    </div>
+    <div class="stat-card offline">
+      <mat-icon>error</mat-icon>
+      <div class="stat-value">{{deviceStats.offlineDevices}}</div>
+      <div class="stat-label">Offline</div>
+    </div>
+    <div class="stat-card punches">
+      <mat-icon>fingerprint</mat-icon>
+      <div class="stat-value">{{deviceStats.todayPunches}}</div>
+      <div class="stat-label">Today's Punches</div>
+    </div>
+    <div class="stat-card users">
+      <mat-icon>people</mat-icon>
+      <div class="stat-value">{{deviceStats.uniqueUsersToday}}</div>
+      <div class="stat-label">Unique Users</div>
+    </div>
+  </div>
+  
+  <div class="action-bar">
+    <button mat-raised-button color="primary" (click)="openDeviceDialog()">
+      <mat-icon>add</mat-icon>
+      Add Device
+    </button>
+    <button mat-raised-button color="accent" (click)="downloadAllData()" [disabled]="devices.length === 0">
+      <mat-icon>download</mat-icon>
+      Download All Data
+    </button>
+    <button mat-stroked-button routerLink="/users/human-resources/punches">
+      <mat-icon>schedule</mat-icon>
+      View Punches
+    </button>
+  
+  </div>
+
+ 
+
+  <!-- Devices List -->
+  <div class="devices-section">
+    <h3>Registered Devices ({{devices.length}})</h3>
+    <div class="devices-grid" *ngIf="devices.length > 0; else noDevices">
+      <div *ngFor="let device of devices" class="device-card" [class]="device.status?.toLowerCase()">
+        <div class="device-header">
+          <h4>{{device.deviceName}}</h4>
+          <span class="status" [style.background-color]="getStatusColor(device.status)">{{device.status}}</span>
+        </div>
+        <div class="device-info">
+          <p><strong>SN:</strong> {{device.deviceSN}}</p>
+          <p *ngIf="device.ipAddress"><strong>IP:</strong> {{device.ipAddress}}</p>
+          <p><strong>Location:</strong> {{device.location || 'Not specified'}}</p>
+          <p *ngIf="device.lastSeenAt"><strong>Last Seen:</strong> {{getLastSeenText(device.lastSeenAt)}}</p>
+        </div>
+        <div class="device-actions">
+          <button mat-button (click)="downloadDeviceData(device.deviceSN)" [disabled]="device.status !== 'Active'">
+            <mat-icon>download</mat-icon>
+            Download
+          </button>
+          <button mat-button (click)="editDevice(device)">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </button>
+          <button mat-button color="warn" (click)="deleteDevice(device.id)">
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <ng-template #noDevices>
+      <div class="no-devices">
+        <mat-icon>devices_other</mat-icon>
+        <h3>No Devices Registered</h3>
+        <p>Add your first biometric device to start tracking attendance</p>
+        <button mat-raised-button color="primary" (click)="openDeviceDialog()">
+          <mat-icon>add</mat-icon>
+          Add First Device
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</div>
+<loading [show]="loading"></loading>

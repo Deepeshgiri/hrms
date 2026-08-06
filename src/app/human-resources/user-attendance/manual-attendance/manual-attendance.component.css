@@ -1,0 +1,48 @@
+
+  .manual-attendance-card {
+    max-width: 800px;
+    margin: 32px auto;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .form-row > * {
+    flex: 1 1 250px;
+  }
+  
+  .time-options {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  
+  .summary-list {
+    margin-top: 24px;
+  }
+  
+  .summary-list .mat-mdc-list-item-icon {
+    color: #666;
+  }
+  
+  .mat-mdc-card-actions {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  @media (max-width: 600px) {
+    .manual-attendance-card {
+      margin: 16px;
+    }
+  
+    .form-row {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+  

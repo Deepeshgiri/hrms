@@ -1,0 +1,102 @@
+<h2 mat-dialog-title>{{data.editMode ? 'Edit' : 'Add'}} Salary Structure</h2>
+
+<mat-dialog-content>
+  <form #salaryFormRef="ngForm" class="salary-form">
+    <!-- Employee Details -->
+    <div class="form-section">
+      <div class="form-section-title">Employee Details</div>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Select Employee</mat-label>
+        <mat-select [(ngModel)]="data.salaryForm.userId" name="userId" required>
+          <mat-option *ngFor="let emp of data.employees" [value]="emp.userId">
+            {{emp.name}} ({{emp.employeeId || 'No ID'}})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Basic Salary Components -->
+    <div class="form-section">
+      <div class="form-section-title">Salary Components</div>
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Basic Salary</mat-label>
+          <input matInput [(ngModel)]="data.salaryForm.basicSalary" name="basicSalary" type="number" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>HRA</mat-label>
+          <input matInput [(ngModel)]="data.salaryForm.hra" name="hra" type="number">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>DA</mat-label>
+          <input matInput [(ngModel)]="data.salaryForm.da" name="da" type="number">
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Allowances -->
+    <div class="form-section dynamic-section">
+      <div class="form-section-title">Allowances</div>
+      <div *ngFor="let allowance of data.salaryForm.allowances; let i = index" class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Allowance Name</mat-label>
+          <input matInput [(ngModel)]="allowance.name" [name]="'allowanceName' + i">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Amount</mat-label>
+          <input matInput [(ngModel)]="allowance.amount" [name]="'allowanceAmount' + i" type="number">
+        </mat-form-field>
+        <button mat-icon-button (click)="removeAllowance(i)" color="warn">
+          <mat-icon>remove_circle_outline</mat-icon>
+        </button>
+      </div>
+      <button mat-stroked-button (click)="addAllowance()">
+        <mat-icon>add</mat-icon> Add Allowance
+      </button>
+    </div>
+
+    <!-- Deductions -->
+    <div class="form-section dynamic-section">
+      <div class="form-section-title">Deductions</div>
+      <div *ngFor="let deduction of data.salaryForm.deductions; let i = index" class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Deduction Name</mat-label>
+          <input matInput [(ngModel)]="deduction.name" [name]="'deductionName' + i">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Amount</mat-label>
+          <input matInput [(ngModel)]="deduction.amount" [name]="'deductionAmount' + i" type="number">
+        </mat-form-field>
+        <button mat-icon-button (click)="removeDeduction(i)" color="warn">
+          <mat-icon>remove_circle_outline</mat-icon>
+        </button>
+      </div>
+      <button mat-stroked-button (click)="addDeduction()">
+        <mat-icon>add</mat-icon> Add Deduction
+      </button>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-section">
+      <div class="summary-row">
+        <span>Gross Salary:</span>
+        <span>{{getGrossSalary() | currency:'INR'}}</span>
+      </div>
+      <div class="summary-row">
+        <span>Total Deductions:</span>
+        <span>- {{getTotalDeductions() | currency:'INR'}}</span>
+      </div>
+      <div class="summary-row total">
+        <span>Net Salary:</span>
+        <span>{{getNetSalary() | currency:'INR'}}</span>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Cancel</button>
+  <button mat-flat-button color="primary" [mat-dialog-close]="data.salaryForm" [disabled]="!salaryFormRef.valid">
+    Save
+  </button>
+</mat-dialog-actions>

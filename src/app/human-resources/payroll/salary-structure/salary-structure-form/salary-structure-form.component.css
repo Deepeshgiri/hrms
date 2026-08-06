@@ -1,0 +1,52 @@
+
+.salary-form {
+    padding: 24px;
+  }
+  
+  .form-section {
+    margin-bottom: 24px;
+  }
+  
+  .form-section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: #3f51b5;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .form-row > * {
+    flex: 1 1 250px;
+  }
+  
+  .dynamic-section .form-row {
+    align-items: center;
+  }
+  
+  .summary-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e0e0e0;
+  }
+  
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .summary-row.total {
+    font-weight: 500;
+    color: #3f51b5;
+  }
+  
+  .mat-mdc-dialog-actions {
+    justify-content: flex-end;
+  }
+  

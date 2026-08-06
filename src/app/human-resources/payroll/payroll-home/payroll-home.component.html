@@ -1,0 +1,52 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+  <div class="content-title">💰 Payroll Dashboard</div>
+  
+  <div class="stats-grid">
+    <div class="stat-card employees">
+      <mat-icon>people</mat-icon>
+      <div class="stat-value">{{stats.totalEmployees}}</div>
+      <div class="stat-label">Total Employees</div>
+    </div>
+    <div class="stat-card processed">
+      <mat-icon>check_circle</mat-icon>
+      <div class="stat-value">{{stats.processedPayslips}}</div>
+      <div class="stat-label">Processed Payslips</div>
+    </div>
+    <div class="stat-card pending">
+      <mat-icon>pending</mat-icon>
+      <div class="stat-value">{{stats.pendingPayslips}}</div>
+      <div class="stat-label">Pending Payslips</div>
+    </div>
+    <div class="stat-card payroll">
+      <mat-icon>account_balance_wallet</mat-icon>
+      <div class="stat-value">₹{{stats.totalPayroll | number}}</div>
+      <div class="stat-label">Total Payroll</div>
+    </div>
+  </div>
+
+  <div class="action-grid">
+    <div class="action-card" routerLink="/users/human-resources/payroll/salary-structure">
+      <mat-icon>account_balance</mat-icon>
+      <h3>Salary Structure</h3>
+      <p>Manage employee salary structures</p>
+    </div>
+    <div class="action-card" routerLink="/users/human-resources/payroll/payslips">
+      <mat-icon>receipt_long</mat-icon>
+      <h3>Payslips</h3>
+      <p>Generate and manage payslips</p>
+    </div>
+    <div class="action-card" routerLink="/users/human-resources/increments">
+      <mat-icon>trending_up</mat-icon>
+      <h3>Increments</h3>
+      <p>Manage salary increments</p>
+    </div>
+    <div class="action-card" routerLink="/users/human-resources/analytics">
+      <mat-icon>analytics</mat-icon>
+      <h3>Reports</h3>
+      <p>Payroll analytics and reports</p>
+    </div>
+  </div>
+</div>
+<loading [show]="loading"></loading>

@@ -1,0 +1,183 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+  <div class="content-title">💰 Salary Structure Management</div>
+  
+  <div class="action-bar">
+    <button mat-raised-button color="primary" (click)="showSalaryForm = true">
+      <mat-icon>add</mat-icon> Add Salary Structure
+    </button>
+    <button mat-raised-button color="accent" (click)="loadSalaryStructures()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
+  
+  <div class="salary-cards" *ngIf="salaryStructures.length">
+    <mat-card *ngFor="let s of salaryStructures">
+      <mat-card-header>
+        <mat-card-title>{{s.employeeName}}</mat-card-title>
+        <mat-card-subtitle>ID: {{s.employeeId || 'N/A'}}</mat-card-subtitle>
+        <button mat-icon-button (click)="editSalary(s)">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item>
+            <span matListItemTitle>Basic Salary</span>
+            <span matListItemLine>₹{{s.basicSalary | number}}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>HRA</span>
+            <span matListItemLine>₹{{s.hra | number}}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>DA</span>
+            <span matListItemLine>₹{{s.da | number}}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>Allowances</span>
+            <span matListItemLine>₹{{getAllowancesTotal(s.allowances) | number}}</span>
+          </mat-list-item>
+          <mat-list-item>
+            <span matListItemTitle>Deductions</span>
+            <span matListItemLine>-₹{{getDeductionsTotal(s.deductions) | number}}</span>
+          </mat-list-item>
+          <mat-divider></mat-divider>
+          <mat-list-item>
+            <span matListItemTitle><strong>Net Salary</strong></span>
+            <span matListItemLine><strong>₹{{getNetSalary(s) | number}}</strong></span>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
+  <mat-card *ngIf="!loading && !salaryStructures.length" class="no-data">
+    <mat-card-content>
+      <mat-icon>account_balance_wallet</mat-icon>
+      <h3>No Salary Structures Found</h3>
+      <p>Start by adding salary structures for your employees</p>
+    </mat-card-content>
+  </mat-card>
+  
+  <div *ngIf="showSalaryForm" class="form-overlay">
+    <mat-card class="form-container">
+      <mat-card-header>
+        <mat-card-title>{{editMode ? 'Edit' : 'Add'}} Salary Structure</mat-card-title>
+        <button mat-icon-button (click)="closeSalaryForm()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <form #salaryFormRef="ngForm">
+          <h3>Employee Details</h3>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Select Employee</mat-label>
+            <mat-select [(ngModel)]="salaryForm.userId" name="userId" required>
+              <mat-option value="">Choose an employee</mat-option>
+              <mat-option *ngFor="let emp of employees" [value]="emp.userId">
+                {{emp.name}} ({{emp.employeeId || 'No ID'}})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <h3>Basic Salary Components</h3>
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Basic Salary</mat-label>
+              <input matInput [(ngModel)]="salaryForm.basicSalary" name="basicSalary" 
+                     type="number" min="0" required>
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>HRA</mat-label>
+              <input matInput [(ngModel)]="salaryForm.hra" name="hra" type="number" min="0">
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+          </div>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>DA</mat-label>
+              <input matInput [(ngModel)]="salaryForm.da" name="da" type="number" min="0">
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Gross Salary</mat-label>
+              <input matInput [value]="getGrossSalary() | number" readonly>
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+          </div>
+
+          <h3>Additional Allowances</h3>
+          <div *ngFor="let allowance of salaryForm.allowances; let i = index" class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Allowance Name</mat-label>
+              <input matInput [(ngModel)]="allowance.name" [name]="'allowanceName' + i">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Amount</mat-label>
+              <input matInput [(ngModel)]="allowance.amount" [name]="'allowanceAmount' + i" type="number" min="0">
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeAllowance(i)" color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <button mat-stroked-button type="button" (click)="addAllowance()">
+            <mat-icon>add</mat-icon> Add Allowance
+          </button>
+
+          <h3>Deductions</h3>
+          <div *ngFor="let deduction of salaryForm.deductions; let i = index" class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Deduction Name</mat-label>
+              <input matInput [(ngModel)]="deduction.name" [name]="'deductionName' + i">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Amount</mat-label>
+              <input matInput [(ngModel)]="deduction.amount" [name]="'deductionAmount' + i" type="number" min="0">
+              <span matPrefix>₹&nbsp;</span>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeDeduction(i)" color="warn">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+          <button mat-stroked-button type="button" (click)="addDeduction()">
+            <mat-icon>add</mat-icon> Add Deduction
+          </button>
+
+          <mat-divider></mat-divider>
+          
+          <mat-list class="salary-summary">
+            <mat-list-item>
+              <span matListItemTitle>Gross Salary</span>
+              <span matListItemLine>₹{{getGrossSalary() | number}}</span>
+            </mat-list-item>
+            <mat-list-item>
+              <span matListItemTitle>Total Deductions</span>
+              <span matListItemLine>-₹{{getTotalDeductions() | number}}</span>
+            </mat-list-item>
+            <mat-list-item>
+              <span matListItemTitle><strong>Net Salary</strong></span>
+              <span matListItemLine><strong>₹{{getNetSalaryForm() | number}}</strong></span>
+            </mat-list-item>
+          </mat-list>
+        </form>
+      </mat-card-content>
+      
+      <mat-card-actions align="end">
+        <button mat-button (click)="closeSalaryForm()">Cancel</button>
+        <button mat-raised-button color="primary" (click)="saveSalary()" 
+                [disabled]="!salaryFormRef.valid || loading">
+          {{loading ? 'Saving...' : 'Save'}}
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>
+<loading [show]="loading"></loading>

@@ -1,0 +1,17 @@
+.attendance-row{
+    padding-bottom: 15px;
+}
+
+.select{
+    width: 200px;
+}
+
+#full-calendar {
+    max-width: 650px;
+    background: #fff;
+    padding: 15px
+}
+
+.minutes{
+    text-align: right;
+}

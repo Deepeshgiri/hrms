@@ -1,0 +1,132 @@
+ 
+    <admin-header></admin-header>
+    <admin-sidebar></admin-sidebar>
+    <div id="page-content">
+      <div class="content-title">HR Analytics & Reports</div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Employees</h3>
+          <div class="stat-value">{{overview.totalEmployees}}</div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Leaves</h3>
+          <div class="stat-value">{{overview.pendingLeaves}}</div>
+        </div>
+        <div class="stat-card">
+          <h3>Avg Rating</h3>
+          <div class="stat-value">{{overview.averageRating}}</div>
+        </div>
+      </div>
+
+      <mat-tab-group>
+        <mat-tab label="Attendance Report">
+          <div style="padding: 20px;">
+            <div class="filter-bar">
+              <select [(ngModel)]="selectedMonth" class="form-control">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+              <select [(ngModel)]="selectedYear" class="form-control">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+              </select>
+              <button mat-raised-button color="primary" (click)="loadAttendanceReport()">Generate</button>
+            </div>
+            
+            <table class="pinnacle-table" *ngIf="attendanceReport.length">
+              <tr>
+                <th>Employee</th>
+                <th>Present Days</th>
+                <th>Leave Days</th>
+                <th>Attendance %</th>
+              </tr>
+              <tr *ngFor="let r of attendanceReport">
+                <td>{{r.name}}</td>
+                <td>{{r.presentDays}}</td>
+                <td>{{r.leaveDays}}</td>
+                <td><strong>{{getAttendancePercentage(r)}}%</strong></td>
+              </tr>
+            </table>
+          </div>
+        </mat-tab>
+        
+        <mat-tab label="Leave Analytics">
+          <div style="padding: 20px;">
+            <div class="chart-container">
+              <h3>Monthly Leave Trend</h3>
+              <div class="bar-chart">
+                <div *ngFor="let item of leaveAnalytics" class="bar-item">
+                  <div class="bar" [style.height.px]="item.totalLeaves * 10"></div>
+                  <span>{{getMonthName(item.month)}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+    <loading [show]="loading"></loading>
+    <style>
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .stat-card h3 { margin: 0 0 10px 0; font-size: 14px; color: #666; }
+      .stat-value { font-size: 32px; font-weight: bold; color: #2196F3; }
+      .filter-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .filter-bar .form-control { width: 150px; }
+      .chart-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 15px;
+        height: 200px;
+        padding: 20px 0;
+      }
+      .bar-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .bar {
+        width: 100%;
+        background: #2196F3;
+        border-radius: 4px 4px 0 0;
+        min-height: 20px;
+      }
+      .bar-item span {
+        margin-top: 10px;
+        font-size: 12px;
+      }
+    </style>
+  

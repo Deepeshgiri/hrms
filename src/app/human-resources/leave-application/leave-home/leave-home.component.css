@@ -1,0 +1,16 @@
+.leave-row {
+  padding-bottom: 15px;
+  display: flex;
+  gap: 10px;
+}
+.content-title {
+  display: flex;
+  justify-content: space-between;
+}
+
+#leavesMessage {
+  font-weight: 400;
+}
+#leavesMessage span {
+  font-weight: 500;
+}

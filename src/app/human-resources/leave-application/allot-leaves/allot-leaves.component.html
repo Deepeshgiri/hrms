@@ -1,0 +1,32 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <div class="row filter-row">
+        <select class="select" [(ngModel)]="userId" (change)="loadLeaves()">
+            <option value="">Select User</option>
+            <option *ngFor="let r of users" [value]="r.userId">{{r.name}}</option>
+        </select>
+        <button mat-raised-button [disabled]="!userId" (click)="updateLeave()">Update</button>
+    </div>
+    <div class="content-title">User Leaves</div>
+        <table class="pinnacle-table" >
+            <tr>
+                <th>Month</th>
+                <th>Leaves</th>
+                <th>Alloted</th>
+                <th>Carried</th>
+                <th>Used</th>
+            </tr>
+            <tr *ngFor="let l of activeLeave">
+                <td [innerText]="l.month"></td>
+                <td [innerText]="l.leaves"></td>
+                <td>
+                    <input class="input-sm" [(ngModel)]="l.alloted">
+                </td>
+                <td [innerText]="l.carried"></td>
+                <td [innerText]="l.used"></td>
+            </tr>
+        </table>
+    </div>
+
+<loading [show]="loading"></loading>

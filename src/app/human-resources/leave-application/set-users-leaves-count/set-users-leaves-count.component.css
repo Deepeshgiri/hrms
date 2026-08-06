@@ -1,0 +1,13 @@
+
+.filter-row{
+    padding-bottom: 15px;
+}
+.filter-row>*{
+    width:180px;
+    margin-right: 10px;
+}
+
+.months>mat-form-field{
+    max-width: 150px;
+    display: block;
+}

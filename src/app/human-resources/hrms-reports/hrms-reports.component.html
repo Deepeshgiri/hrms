@@ -1,0 +1,194 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+
+<div class="hrms-reports-container">
+
+  <mat-tab-group (selectedIndexChange)="onTabChange(['daily', 'monthly'][$event])">
+
+    <!-- ================= DAILY REPORT ================= -->
+    <mat-tab label="Daily Report">
+      <ng-template mat-tab-label>
+        <mat-icon>calendar_today</mat-icon>
+        <span class="tab-label">Daily Report</span>
+      </ng-template>
+
+      <div class="tab-content">
+
+        <!-- Filters -->
+        <div class="filter-section">
+          <mat-form-field appearance="outline">
+            <mat-label>Select Date</mat-label>
+            <input matInput type="date" [(ngModel)]="dailyDate">
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" (click)="loadDailyReport()">
+            <mat-icon>search</mat-icon> Load Report
+          </button>
+
+          <button mat-raised-button (click)="exportReport('daily')" [disabled]="!dailyReportData">
+            <mat-icon>download</mat-icon> Export CSV
+          </button>
+        </div>
+
+        <!-- Loader -->
+        <div *ngIf="loading" class="loading-spinner">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p>Loading report...</p>
+        </div>
+
+        <!-- Data -->
+        <div *ngIf="dailyReportData && !loading" class="report-data">
+
+          <!-- Summary -->
+          <div class="summary-cards">
+            <div class="summary-card">
+              <h3>Total Employees</h3>
+              <p class="number">{{ dailyReportData.totalEmployees }}</p>
+            </div>
+
+            <div class="summary-card present">
+              <h3>Present</h3>
+              <p class="number">{{ dailyReportData.presentEmployees }}</p>
+            </div>
+
+            <div class="summary-card absent">
+              <h3>Absent</h3>
+              <p class="number">{{ dailyReportData.absentEmployees }}</p>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-container">
+            <table mat-table [dataSource]="dailyReportData.data" class="reports-table">
+
+              <ng-container matColumnDef="employeeId">
+                <th mat-header-cell *matHeaderCellDef>Employee ID</th>
+                <td mat-cell *matCellDef="let element">{{ element.employeeId }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="employeeName">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let element">{{ element.employeeName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="designation">
+                <th mat-header-cell *matHeaderCellDef>Designation</th>
+                <td mat-cell *matCellDef="let element">{{ element.designation }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let element">
+                  <span [ngClass]="element.daysPresent > 0 ? 'status-present' : 'status-absent'">
+                    {{ element.daysPresent > 0 ? 'Present' : 'Absent' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="firstPunch">
+                <th mat-header-cell *matHeaderCellDef>First Punch</th>
+                <td mat-cell *matCellDef="let element">{{ element.firstPunch || '-' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="lastPunch">
+                <th mat-header-cell *matHeaderCellDef>Last Punch</th>
+                <td mat-cell *matCellDef="let element">{{ element.lastPunch || '-' }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['employeeId','employeeName','designation','status','firstPunch','lastPunch']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['employeeId','employeeName','designation','status','firstPunch','lastPunch'];"></tr>
+
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </mat-tab>
+
+
+    <!-- ================= MONTHLY REPORT ================= -->
+    <mat-tab label="Monthly Report">
+      <ng-template mat-tab-label>
+        <mat-icon>calendar_month</mat-icon>
+        <span class="tab-label">Monthly Report</span>
+      </ng-template>
+
+      <div class="tab-content">
+
+        <!-- Filters -->
+        <div class="filter-section">
+          <mat-form-field appearance="outline">
+            <mat-label>Select Date Range</mat-label>
+
+            <input matInput [(ngModel)]="dateRange"
+                   [selectMode]="'range'"
+                   [owlDateTimeTrigger]="dt10"
+                   [owlDateTime]="dt10">
+
+            <owl-date-time #dt10></owl-date-time>
+          </mat-form-field>
+
+          <button mat-raised-button color="primary" (click)="loadMonthlyReport()">
+            <mat-icon>search</mat-icon> Load Report
+          </button>
+
+          <button mat-raised-button (click)="exportReport('monthly')" [disabled]="!monthlyReportData">
+            <mat-icon>download</mat-icon> Export CSV
+          </button>
+        </div>
+
+        <!-- Loader -->
+        <div *ngIf="loading" class="loading-spinner">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p>Loading report...</p>
+        </div>
+
+        <!-- Monthly Table -->
+        <div class="table-container" *ngIf="monthlyReportData?.data?.length && !loading">
+
+          <table class="pinnacle-table">
+
+            <!-- Header -->
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID</th>
+
+                <th *ngFor="let date of dateList">
+                  {{ date }}
+                </th>
+
+                <th>Total Hours</th>
+              </tr>
+            </thead>
+
+            <!-- Body -->
+            <tbody>
+              <tr *ngFor="let row of monthlyReportData.data">
+
+                <td>{{ row.employeeName }}</td>
+                <td>{{ row.employeeId }}</td>
+
+                <td *ngFor="let date of dateList">
+                  {{ row[date] || '-' }}
+                </td>
+
+                <td>{{ row.totalHours }}</td>
+
+              </tr>
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <!-- No Data -->
+        <div *ngIf="monthlyReportData && monthlyReportData.data?.length === 0" class="no-data">
+          <p>No data found for selected range.</p>
+        </div>
+
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

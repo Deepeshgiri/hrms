@@ -1,0 +1,164 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+
+<div id="page-content">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Biometric Punches</mat-card-title>
+      <mat-card-subtitle>View and manage biometric punch data</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Filters -->
+      <div class="filter-container">
+        <mat-form-field appearance="outline">
+          <mat-label>Date Range</mat-label>
+          <mat-date-range-input
+            [rangePicker]="picker"
+            (dateChange)="loadPunches()"
+          >
+            <input matStartDate placeholder="Start date" [(ngModel)]="startDate">
+            <input matEndDate placeholder="End date" [(ngModel)]="endDate">
+          </mat-date-range-input>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-date-range-picker #picker></mat-date-range-picker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Device</mat-label>
+          <mat-select [(ngModel)]="selectedDevice" (selectionChange)="loadPunches()">
+            <mat-option value="">All Devices</mat-option>
+            <mat-option *ngFor="let device of devices" [value]="device.deviceSN">
+              {{device.deviceName}} ({{device.deviceSN}})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Employee ID</mat-label>
+          <input matInput [(ngModel)]="selectedEnrollId" (keyup.enter)="loadPunches()" placeholder="Enter Enroll ID">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Show</mat-label>
+          <mat-select [(ngModel)]="mappedFilter" (selectionChange)="loadPunches()">
+            <mat-option value="all">All Punches</mat-option>
+            <mat-option value="known">Mapped</mat-option>
+            <mat-option value="unknown">Unmapped</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="actions-container">
+          <button mat-flat-button color="primary" (click)="loadPunches()" [disabled]="loading">
+            <mat-icon>refresh</mat-icon> Search
+          </button>
+          <button mat-stroked-button (click)="clearFilters()">
+            <mat-icon>clear</mat-icon> Clear
+          </button>
+          <button mat-stroked-button (click)="exportPunches()" [disabled]="punches.length === 0">
+            <mat-icon>download</mat-icon> Export
+          </button>
+        </div>
+      </div>
+
+      <!-- Punches Table -->
+      <div class="table-container" [class.loading-overlay]="loading">
+        <table mat-table [dataSource]="punches" class="punches-table">
+
+          <ng-container matColumnDef="datetime">
+            <th mat-header-cell *matHeaderCellDef>Date & Time</th>
+            <td mat-cell *matCellDef="let punch">
+              <div>{{punch.datetime | date:'dd/MM/yyyy'}}</div>
+              <div class="time">{{punch.datetime | date:'HH:mm:ss'}}</div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="deviceSN">
+            <th mat-header-cell *matHeaderCellDef>Device</th>
+            <td mat-cell *matCellDef="let punch">
+              <div>{{punch.deviceSN}}</div>
+              <div class="device-info" *ngIf="getDeviceName(punch.deviceSN)">
+                {{getDeviceName(punch.deviceSN)}}
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="enrollId">
+            <th mat-header-cell *matHeaderCellDef>Enroll ID</th>
+            <td mat-cell *matCellDef="let punch">{{punch.enrollId}}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="employee">
+            <th mat-header-cell *matHeaderCellDef>Employee</th>
+            <td mat-cell *matCellDef="let punch" class="employee-cell">
+              <mat-icon [color]="punch.userId ? 'primary' : 'warn'">
+                {{punch.userId ? 'verified_user' : 'help_outline'}}
+              </mat-icon>
+              <div>
+                <div class="employee-name" *ngIf="punch.userId; else unknownEmployee">{{punch.name}}</div>
+                <ng-template #unknownEmployee><span class="unmapped">Unknown</span></ng-template>
+                <div class="employee-id" *ngIf="punch.userId">{{punch.employeeId || punch.userId}}</div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let punch">
+              <mat-chip-listbox *ngIf="punch.status">
+                <mat-chip [style.background-color]="getStatusColor(punch.status)" [style.color]="'white'">
+                  {{punch.status}}
+                </mat-chip>
+              </mat-chip-listbox>
+              <span *ngIf="!punch.status">-</span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="entryType">
+            <th mat-header-cell *matHeaderCellDef>Entry</th>
+            <td mat-cell *matCellDef="let punch">
+              <mat-chip-listbox>
+                <mat-chip>
+                  <mat-icon matChipAvatar>{{punch.entryType === 'manual' ? 'edit' : 'fingerprint'}}</mat-icon>
+                  {{punch.entryType === 'manual' ? 'Manual' : 'Machine'}}
+                </mat-chip>
+              </mat-chip-listbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let punch">
+              <button mat-icon-button [matMenuTriggerFor]="punchMenu">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #punchMenu="matMenu">
+                <button mat-menu-item (click)="viewPunchDetails(punch)">
+                  <mat-icon>info</mat-icon>
+                  <span>View Details</span>
+                </button>
+                <button mat-menu-item *ngIf="!punch.userId" (click)="mapEmployee(punch)">
+                  <mat-icon>person_add</mat-icon>
+                  <span>Map Employee</span>
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <!-- No Data State -->
+        <div *ngIf="!loading && punches.length === 0" class="no-data">
+          <mat-icon>snooze</mat-icon>
+          <h3>No Punches Found</h3>
+          <p>Try adjusting your filters or date range.</p>
+        </div>
+      </div>
+    </mat-card-content>
+    <mat-progress-bar mode="indeterminate" *ngIf="loading"></mat-progress-bar>
+  </mat-card>
+</div>
+
+<loading [show]="loading"></loading>

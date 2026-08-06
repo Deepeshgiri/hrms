@@ -1,0 +1,22 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+    <div class="row filter-row">
+        <select class="select" [(ngModel)]="roleId" (change)="loadLeaves()">
+            <option value="">Select Role</option>
+            <option *ngFor="let r of roles" [value]="r.roleId">{{r.roleName}}</option>
+        </select>
+        <button mat-raised-button [disabled]="!roleId" (click)="updateLeave()" >Update</button>
+    </div>
+    <div class="content-title">Default Role Leaves</div>
+    <div class="content-box months" *ngIf="activeLeave">
+
+        <mat-form-field *ngFor="let l of activeLeave">
+            <mat-label [innerText]="l.month + ' Leaves'"></mat-label>
+            <input matInput [(ngModel)]="l.leaves">
+        </mat-form-field>
+
+    </div>
+</div>
+
+<loading [show]="loading"></loading>

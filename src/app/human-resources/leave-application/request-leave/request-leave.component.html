@@ -1,0 +1,69 @@
+<admin-header *ngIf="!isModal"></admin-header>
+<admin-sidebar *ngIf="!isModal"></admin-sidebar>
+<div id="page-content">
+    <div class="content-title">Request Leave</div>
+    <div class="content-box">
+        <form #leaveForm="ngForm" (ngSubmit)="submitLeave(leaveForm.value)">
+            <mat-form-field>
+                <mat-label>Type Leave</mat-label>
+                <textarea name="leaveContent" rows="5" matInput ngModel required></textarea>
+            </mat-form-field>
+            <div style="height:10px"></div>
+            <div class="row align-items-center">
+                <div class="col-sm-1">
+                    <mat-form-field>
+                        <mat-label>Duration</mat-label>
+                        <mat-select name="duration" ngModel="F" #duration="ngModel" required>
+                            <mat-option value="H">Half Day</mat-option>
+                            <mat-option value="F">Full Day</mat-option>
+                            <mat-option value="R">Range</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
+                <ng-container *ngIf="duration.value=='R'">
+                    <div class="col-sm-3">
+                        <mat-form-field>
+                            <input name="fromDate" ngModel matInput [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1"
+                                placeholder="From Date" required>
+                            <span matSuffix class="material-icons">calendar_today</span>
+                            <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+                        </mat-form-field>
+                    </div>
+                    <div class="col-sm-3">
+                        <mat-form-field>
+                            <input name="toDate" ngModel matInput [owlDateTime]="dt2" [owlDateTimeTrigger]="dt2"
+                                placeholder="To Date" required>
+                            <span matSuffix class="material-icons">calendar_today</span>
+                            <owl-date-time #dt2 [pickerType]="'calendar'"></owl-date-time>
+                        </mat-form-field>
+                    </div>
+                </ng-container>
+                <div class="col-sm-3" *ngIf="duration.value!='R'">
+                    <mat-form-field>
+                        <input name="date" ngModel matInput [owlDateTime]="dt1" [owlDateTimeTrigger]="dt1"
+                            placeholder="Date" required>
+                        <span matSuffix class="material-icons">calendar_today</span>
+                        <owl-date-time #dt1 [pickerType]="'calendar'"></owl-date-time>
+                    </mat-form-field>
+                </div>
+                <div class="col-sm-3" *ngIf="duration.value=='H'">
+                    <mat-radio-group ngModel name="half" required>
+                        <mat-radio-button value="1">First Half</mat-radio-button>&nbsp;
+                        <mat-radio-button value="2">Second Half</mat-radio-button>
+                    </mat-radio-group>
+                </div>
+                <div class="col-sm-2">
+                    <mat-form-field>
+                        <mat-label>Reason</mat-label>
+                        <input name="reason" ngModel matInput placeholder="Like Marriage Event etc." required>
+                    </mat-form-field>
+                </div>
+                <div class="col-sm-2">
+                    <button type="submit" mat-raised-button color="primary"
+                        [disabled]="leaveForm.invalid">Submit</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<loading [show]="loading"></loading>

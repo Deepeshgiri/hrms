@@ -1,0 +1,134 @@
+<admin-header></admin-header>
+<admin-sidebar></admin-sidebar>
+<div id="page-content">
+ 
+
+  <!-- Key Metrics Cards -->
+  <div class="metrics-grid">
+    <mat-card class="metric-card employees">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon>people</mat-icon>
+        </div>
+        <div class="metric-info">
+          <div class="metric-value">{{dashboardStats.totalEmployees}}</div>
+          <div class="metric-label">Total Employees</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card attendance">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon>how_to_reg</mat-icon>
+        </div>
+        <div class="metric-info">
+          <div class="metric-value">{{dashboardStats.presentToday}}</div>
+          <div class="metric-label">Present Today</div>
+          <div class="metric-percentage">{{getAttendancePercentage()}}%</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card leaves">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon>event_busy</mat-icon>
+        </div>
+        <div class="metric-info">
+          <div class="metric-value">{{dashboardStats.onLeave}}</div>
+          <div class="metric-label">On Leave</div>
+          <div class="metric-percentage">{{getLeavePercentage()}}%</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card pending">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon>pending_actions</mat-icon>
+        </div>
+        <div class="metric-info">
+          <div class="metric-value">{{dashboardStats.pendingLeaves}}</div>
+          <div class="metric-label">Pending Leaves</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="metric-card late">
+      <mat-card-content>
+        <div class="metric-icon">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <div class="metric-info">
+          <div class="metric-value">{{dashboardStats.lateArrivals}}</div>
+          <div class="metric-label">Late Arrivals</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filter-card">
+    <mat-card-content>
+      <div class="filter-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Month</mat-label>
+          <mat-select [(value)]="selectedMonth" (selectionChange)="onFilterChange()">
+            <mat-option *ngFor="let m of months" [value]="m.value">{{m.label}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline">
+          <mat-label>Year</mat-label>
+          <mat-select [(value)]="selectedYear" (selectionChange)="onFilterChange()">
+            <mat-option *ngFor="let y of years" [value]="y">{{y}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Charts Section -->
+  <div class="charts-grid">
+    <!-- Attendance Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>bar_chart</mat-icon>
+          Attendance Analytics
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-scroll-container">
+          <div class="chart-container">
+            <canvas id="attendanceChart"></canvas>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Leave Trends Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>show_chart</mat-icon>
+          Leave Trends
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas id="leaveChart"></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+
+   
+  </div>
+
+  
+<div class="loading-overlay" *ngIf="loading">
+  <mat-spinner></mat-spinner>
+  <p>Loading analytics...</p>
+</div>

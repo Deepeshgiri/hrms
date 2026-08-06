@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from 'src/app/AppConstants';
-import { CoreService } from 'src/app/service/core.service';
+import { AppConstants } from '../../../AppConstants';
+import { CoreService } from '../../../service/core.service';
 
 @Component({
   selector: 'app-users-leaves',
@@ -10,40 +10,37 @@ import { CoreService } from 'src/app/service/core.service';
 export class UsersLeavesComponent implements OnInit {
 
   loading: boolean = true;
-  usersLeaves = []
-  date = new Date()
+  usersLeaves: any[] = [];
+  date: Date = new Date();
 
   constructor(private coreService: CoreService) { }
 
   ngOnInit(): void {
     this.date.setDate(1);
-    this.filterLeaves()
+    this.filterLeaves();
   }
 
-  //Get Users leaves
-  getUsersLeaves(month, year) {
-    const url = AppConstants.API_URL + "leaves/all-users-leaves?month=" + month + "&year=" + year
+  getUsersLeaves(month: number, year: number): void {
+    const url = AppConstants.API_URL + "leaves/all-users-leaves?month=" + month + "&year=" + year;
     this.coreService.getRequest(url).subscribe((data: any) => {
-      this.usersLeaves = data
-      this.loading = false
-    })
+      this.usersLeaves = data;
+      this.loading = false;
+    });
   }
-  //Change Date and filter on clicking next and prev icons
-  changeDate(direction) {
-    let date = new Date(this.date);
-    if (direction == 'next') {
+
+  changeDate(direction: string): void {
+    const date = new Date(this.date);
+    if (direction === 'next') {
       date.setMonth(date.getMonth() + 1);
-      this.date = date
+      this.date = date;
     } else {
       date.setMonth(date.getMonth() - 1);
-      this.date = date
+      this.date = date;
     }
-    this.filterLeaves()
+    this.filterLeaves();
   }
 
-  //Filter Leaves
-  filterLeaves() {
-    this.getUsersLeaves(this.date.getMonth(), this.date.getFullYear())
+  filterLeaves(): void {
+    this.getUsersLeaves(this.date.getMonth(), this.date.getFullYear());
   }
-
 }

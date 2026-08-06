@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { CoreService } from 'src/app/service/core.service';
-import { AppConstants } from 'src/app/AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { AppConstants } from '../../../AppConstants';
 
 @Component({
   selector: 'app-salary-structure',
@@ -8,13 +8,13 @@ import { AppConstants } from 'src/app/AppConstants';
   styleUrls: ['./salary-structure.component.css']
 })
 export class SalaryStructureComponent implements OnInit {
-  loading = false;
-  salaryStructures = [];
-  employees = [];
-  showSalaryForm = false;
-  editMode = false;
+  loading: boolean = false;
+  salaryStructures: any[] = [];
+  employees: any[] = [];
+  showSalaryForm: boolean = false;
+  editMode: boolean = false;
   
-  salaryForm = {
+  salaryForm: any = {
     userId: null,
     basicSalary: 0,
     hra: 0,
@@ -25,26 +25,33 @@ export class SalaryStructureComponent implements OnInit {
 
   constructor(private coreService: CoreService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadSalaryStructures();
     this.loadEmployees();
   }
   
-  loadSalaryStructures() {
+  loadSalaryStructures(): void {
     this.loading = true;
     this.coreService.getRequest(`${AppConstants.API_URL}hr/payroll/salary-structures`)
-      .subscribe((data: any) => { 
-        this.salaryStructures = data || [];
-        this.loading = false;
-      }, () => { this.loading = false; });
+      .subscribe({
+        next: (data: any) => { 
+          this.salaryStructures = data || [];
+          this.loading = false;
+        },
+        error: () => { 
+          this.loading = false; 
+        }
+      });
   }
   
-  loadEmployees() {
+  loadEmployees(): void {
     this.coreService.getRequest(`${AppConstants.API_URL}users`)
-      .subscribe((data: any) => { this.employees = data || []; });
+      .subscribe((data: any) => { 
+        this.employees = data || []; 
+      });
   }
   
-  editSalary(salary: any) {
+  editSalary(salary: any): void {
     this.salaryForm = { 
       ...salary,
       allowances: salary.allowances || [],
@@ -54,7 +61,7 @@ export class SalaryStructureComponent implements OnInit {
     this.showSalaryForm = true;
   }
   
-  saveSalary() {
+  saveSalary(): void {
     if (!this.salaryForm.userId) {
       alert('Please select an employee');
       return;
@@ -62,22 +69,25 @@ export class SalaryStructureComponent implements OnInit {
     
     this.loading = true;
     this.coreService.postRequest(`${AppConstants.API_URL}hr/payroll/salary-structure`, this.salaryForm)
-      .subscribe(() => {
-        this.loadSalaryStructures();
-        this.closeSalaryForm();
-        alert('Salary structure saved successfully!');
-      }, (error) => { 
-        this.loading = false;
-        alert('Error saving salary structure: ' + (error.error?.message || 'Unknown error'));
+      .subscribe({
+        next: () => {
+          this.loadSalaryStructures();
+          this.closeSalaryForm();
+          alert('Salary structure saved successfully!');
+        },
+        error: (error: any) => { 
+          this.loading = false;
+          alert('Error saving salary structure: ' + (error.error?.message || 'Unknown error'));
+        }
       });
   }
   
-  closeSalaryForm() {
+  closeSalaryForm(): void {
     this.showSalaryForm = false;
     this.resetForm();
   }
   
-  resetForm() {
+  resetForm(): void {
     this.salaryForm = {
       userId: null,
       basicSalary: 0,
@@ -89,19 +99,19 @@ export class SalaryStructureComponent implements OnInit {
     this.editMode = false;
   }
   
-  addAllowance() {
+  addAllowance(): void {
     this.salaryForm.allowances.push({ name: '', amount: 0 });
   }
   
-  removeAllowance(index: number) {
+  removeAllowance(index: number): void {
     this.salaryForm.allowances.splice(index, 1);
   }
   
-  addDeduction() {
+  addDeduction(): void {
     this.salaryForm.deductions.push({ name: '', amount: 0 });
   }
   
-  removeDeduction(index: number) {
+  removeDeduction(index: number): void {
     this.salaryForm.deductions.splice(index, 1);
   }
   
@@ -122,21 +132,21 @@ export class SalaryStructureComponent implements OnInit {
   }
   
   getAllowancesTotalForm(): number {
-    return this.salaryForm.allowances.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+    return this.salaryForm.allowances.reduce((sum: number, a: any) => sum + (parseFloat(a.amount) || 0), 0);
   }
   
   getDeductionsTotalForm(): number {
-    return this.salaryForm.deductions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    return this.salaryForm.deductions.reduce((sum: number, d: any) => sum + (parseFloat(d.amount) || 0), 0);
   }
   
   getAllowancesTotal(allowances: any): number {
     if (!allowances || !Array.isArray(allowances)) return 0;
-    return allowances.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+    return allowances.reduce((sum: number, a: any) => sum + (parseFloat(a.amount) || 0), 0);
   }
   
   getDeductionsTotal(deductions: any): number {
     if (!deductions || !Array.isArray(deductions)) return 0;
-    return deductions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    return deductions.reduce((sum: number, d: any) => sum + (parseFloat(d.amount) || 0), 0);
   }
   
   getNetSalary(salary: any): number {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { AppConstants } from 'src/app/AppConstants';
-import { CoreService } from 'src/app/service/core.service';
-import { DialogService } from 'src/app/service/dialog.service';
+import { AppConstants } from '../../../../AppConstants';
+import { CoreService } from '../../../../service/core.service';
+import { DialogService } from '../../../../service/dialog.service';
 import { LeaveService } from '../leave.service';
 
 @Component({
@@ -11,12 +11,11 @@ import { LeaveService } from '../leave.service';
 })
 export class SetUsersLeavesCountComponent implements OnInit {
 
-  userId = ""
-  activeLeave
-  users = []
+  userId: string = "";
+  activeLeave: any;
+  users: any[] = [];
 
-  loading: boolean = true
-
+  loading: boolean = true;
 
   constructor(
     private leaveService: LeaveService,
@@ -27,40 +26,39 @@ export class SetUsersLeavesCountComponent implements OnInit {
   ngOnInit(): void {
     this.coreService.getRequest(AppConstants.API_URL + "leaves/users-leaves").
       subscribe((users: any) => {
-        this.loading = false
-        this.users = users
-      })
+        this.loading = false;
+        this.users = users;
+      });
   }
 
-  //Load Leaves
-  loadLeaves() {
-    if (this.userId == "") {
-      return this.activeLeave = []
+  loadLeaves(): void {
+    if (this.userId === "") {
+      this.activeLeave = [];
+      return;
     }
-    let user = this.users.find(u => u.userId == this.userId)
-    this.activeLeave = user.leaves
+    const user = this.users.find(u => u.userId === this.userId);
+    if (user) {
+      this.activeLeave = user.leaves;
+    }
   }
 
-  // Update Leave
-  updateLeave() {
-    this.loading = true
-    const url = AppConstants.API_URL + "leaves/user-leave"
+  updateLeave(): void {
+    this.loading = true;
+    const url = AppConstants.API_URL + "leaves/user-leave";
     const data = {
       userId: this.userId,
       leave: this.activeLeave
-    }
+    };
     this.coreService.putRequest(url, data).subscribe((data: any) => {
-      this.loading = false
-    })
+      this.loading = false;
+    });
   }
 
-  // Recalculate leaves
-  reCalculate() {
-    this.loading = true
+  reCalculate(): void {
+    this.loading = true;
     this.leaveService.reCalculateLeaves().subscribe((result: any) => {
-      this.dialog.showDialog({ content: result.message })
-      this.loading = false
-    })
+      this.dialog.openDialog({ content: result.message });
+      this.loading = false;
+    });
   }
-
 }

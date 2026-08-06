@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { CoreService } from 'src/app/service/core.service';
-import { AppConstants } from 'src/app/AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { AppConstants } from '../../../AppConstants';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
@@ -9,12 +9,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
   styleUrls: ['./payslips.component.css']
 })
 export class PayslipsComponent implements OnInit {
-  loading = false;
-  payslips = [];
-  employees = [];
-  selectedMonth = new Date().getMonth() + 1;
-  selectedYear = new Date().getFullYear();
-  selectedEmployee = null;
+  loading: boolean = false;
+  payslips: any[] = [];
+  employees: any[] = [];
+  selectedMonth: number = new Date().getMonth() + 1;
+  selectedYear: number = new Date().getFullYear();
+  selectedEmployee: any = null;
   
   months = [
     {value: 1, label: 'January'}, {value: 2, label: 'February'}, {value: 3, label: 'March'},
@@ -22,20 +22,20 @@ export class PayslipsComponent implements OnInit {
     {value: 7, label: 'July'}, {value: 8, label: 'August'}, {value: 9, label: 'September'},
     {value: 10, label: 'October'}, {value: 11, label: 'November'}, {value: 12, label: 'December'}
   ];
-  years = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i);
+  years: number[] = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i);
 
-  displayedColumns = ['employee', 'month', 'year', 'grossSalary', 'netSalary', 'status', 'actions'];
+  displayedColumns: string[] = ['employee', 'month', 'year', 'grossSalary', 'netSalary', 'status', 'actions'];
 
   constructor(
     private coreService: CoreService,
     private snackBar: MatSnackBar
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadPayslips();
   }
 
-  loadPayslips() {
+  loadPayslips(): void {
     this.loading = true;
     const params = `month=${this.selectedMonth}&year=${this.selectedYear}${this.selectedEmployee ? '&userId=' + this.selectedEmployee : ''}`;
     
@@ -51,7 +51,7 @@ export class PayslipsComponent implements OnInit {
     });
   }
 
-  generateAllPayslips() {
+  generateAllPayslips(): void {
     if (!confirm('Generate payslips for all employees? This will overwrite existing drafts.')) return;
     
     this.loading = true;
@@ -62,14 +62,14 @@ export class PayslipsComponent implements OnInit {
           this.loadPayslips();
           this.showSuccess(response.message || 'Payslips generated successfully!');
         },
-        error: (error) => {
+        error: () => {
           this.loading = false;
           this.showError('Failed to generate payslips');
         }
       });
   }
   
-  updateStatus(payslip: any, status: string) {
+  updateStatus(payslip: any, status: string): void {
     const paidDate = status === 'Paid' ? new Date().toISOString().split('T')[0] : null;
     
     this.coreService.putRequest(`${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/status`, 
@@ -84,17 +84,17 @@ export class PayslipsComponent implements OnInit {
       });
   }
   
-  downloadPayslip(payslip: any) {
+  downloadPayslip(payslip: any): void {
     const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download`;
     window.open(url, '_blank');
   }
   
-  viewPayslip(payslip: any) {
+  viewPayslip(payslip: any): void {
     const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download`;
     window.open(url, '_blank');
   }
 
-  deletePayslip(payslip: any) {
+  deletePayslip(payslip: any): void {
     if (!confirm('Are you sure you want to delete this payslip?')) return;
     
     this.coreService.deleteRequest(`${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}`)
@@ -107,7 +107,7 @@ export class PayslipsComponent implements OnInit {
       });
   }
 
-  getMonthName(m: number) {
+  getMonthName(m: number): string {
     return this.months.find(month => month.value === m)?.label || '';
   }
 
@@ -120,11 +120,11 @@ export class PayslipsComponent implements OnInit {
     }
   }
 
-  private showSuccess(message: string) {
+  private showSuccess(message: string): void {
     this.snackBar.open(message, 'Close', { duration: 3000 });
   }
 
-  private showError(message: string) {
+  private showError(message: string): void {
     this.snackBar.open(message, 'Close', { duration: 5000 });
   }
 }

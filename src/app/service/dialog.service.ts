@@ -1,0 +1,16 @@
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class DialogService {
+  constructor() { }
+
+  openDialog(data: any): void {
+    // Stub implementation
+  }
+
+  closeDialog(): void {
+    // Stub implementation
+  }
+}

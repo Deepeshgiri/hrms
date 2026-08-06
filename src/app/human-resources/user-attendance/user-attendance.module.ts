@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PinnacleCommonModule } from 'src/app/pinnacle-common.module';
@@ -9,6 +10,7 @@ import { SetTimingsComponent } from './set-timings/set-timings.component';
 import { UsersLeavesComponent } from './users-leaves/users-leaves.component';
 import { ManualAttendanceComponent } from './manual-attendance/manual-attendance.component';
 import { HrmsReportsComponent } from '../hrms-reports/hrms-reports.component';
+import { CoreService } from 'src/app/service/core.service';
 
 const routes: Routes = [
     { path: "", component: UserAttendanceComponent },
@@ -30,10 +32,12 @@ const routes: Routes = [
     ],
     imports: [
         CommonModule,
+        HttpClientModule,
         PinnacleCommonModule,
         MaterialModule,
         RouterModule.forChild(routes)
     ],
+    providers: [CoreService],
     exports: []
 })
 export class UserAttendanceModule { }

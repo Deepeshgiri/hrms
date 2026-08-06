@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { CoreService } from 'src/app/service/core.service';
-import { AppConstants } from 'src/app/AppConstants';
+import { CoreService } from '../../../service/core.service';
+import { AppConstants } from '../../../AppConstants';
 
 @Component({
   selector: 'app-payroll-home',
@@ -8,7 +8,7 @@ import { AppConstants } from 'src/app/AppConstants';
   styleUrls: ['./payroll-home.component.css']
 })
 export class PayrollHomeComponent implements OnInit {
-  loading = false;
+  loading: boolean = false;
   stats = {
     totalEmployees: 0,
     processedPayslips: 0,
@@ -18,16 +18,21 @@ export class PayrollHomeComponent implements OnInit {
 
   constructor(private coreService: CoreService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadPayrollStats();
   }
 
-  loadPayrollStats() {
+  loadPayrollStats(): void {
     this.loading = true;
     this.coreService.getRequest(`${AppConstants.API_URL}hr/payroll/stats`)
-      .subscribe((data: any) => {
-        this.stats = data || this.stats;
-        this.loading = false;
-      }, () => { this.loading = false; });
+      .subscribe({
+        next: (data: any) => {
+          this.stats = data || this.stats;
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+        }
+      });
   }
 }

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PinnacleCommonModule } from 'src/app/pinnacle-common.module';
@@ -10,6 +11,7 @@ import { SetUsersLeavesCountComponent } from './set-users-leaves-count/set-users
 import { InstituteHolidaysComponent } from './institute-holidays/institute-holidays.component';
 import { DefaultUserLeavesComponent } from './default-user-leaves/default-user-leaves.component';
 import { AllotLeavesComponent } from './allot-leaves/allot-leaves.component';
+import { CoreService } from 'src/app/service/core.service';
 
 const routes: Routes = [
     { path: "", component: LeaveHomeComponent },
@@ -19,7 +21,7 @@ const routes: Routes = [
     { path: "institute-holidays", component: InstituteHolidaysComponent },
     { path: "default-users-leaves", component: DefaultUserLeavesComponent },
     { path: "allot-leaves", component: AllotLeavesComponent },
-]
+];
 
 @NgModule({
     declarations: [
@@ -34,9 +36,11 @@ const routes: Routes = [
     ],
     imports: [
         CommonModule,
+        HttpClientModule,
         PinnacleCommonModule,
         RouterModule.forChild(routes)
     ],
+    providers: [CoreService],
     exports: []
 })
 export class LeaveModule { }

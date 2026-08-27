@@ -1,0 +1,20 @@
+{
+  "name": "hrms-backend",
+  "version": "1.0.0",
+  "description": "HRMS backend API built with Node.js, Express and MySQL",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:init": "mysql -u hrms -phrms123 hrms < db/schema.sql && mysql -u hrms -phrms123 hrms < db/seed.sql && node db/seed-attendance.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.0"
+  }
+}

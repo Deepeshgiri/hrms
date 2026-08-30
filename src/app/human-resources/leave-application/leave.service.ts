@@ -61,12 +61,16 @@ export class LeaveService {
     return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/" + leaveId);
   }
 
-  addInstituteHoliday(date: string) {
-    return this.coreService.postRequest(AppConstants.API_URL + "leaves/institute-holiday", { date });
+  addInstituteHoliday(data: { date: string; title: string; description?: string; type?: string }) {
+    return this.coreService.postRequest(AppConstants.API_URL + "leaves/institute-holiday", data);
   }
 
   getInstituteHolidays() {
     return this.coreService.getRequest(AppConstants.API_URL + "leaves/institute-holidays");
+  }
+
+  updateInstituteHoliday(date: string, data: { title: string; description?: string; type?: string }) {
+    return this.coreService.putRequest(AppConstants.API_URL + "leaves/institute-holiday/" + date, data);
   }
 
   deleteInstituteHoliday(date: string) {

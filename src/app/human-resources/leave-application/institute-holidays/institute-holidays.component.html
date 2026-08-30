@@ -1,64 +1,92 @@
-<div class="institute-holidays-container">
-  <div class="page-header-title">
-    <div class="header-left-title">
-      <mat-icon>event_available</mat-icon>
-      <span>{{ auth.isEmployee() ? 'My Holiday & Off-Days Calendar' : 'Company & Institutional Holidays' }}</span>
-    </div>
-  </div>
+<div class="content-title">
+  Institute Holidays
+  <button mat-raised-button color="primary" (click)="openAddForm()">
+    <mat-icon>add</mat-icon> Add Holiday
+  </button>
+</div>
 
-  <!-- Add Holiday Form (Admin / HR only) -->
-  <mat-card class="content-box" *ngIf="auth.isAdminOrHR()" style="margin-bottom: 24px; padding: 16px;">
-    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-      <mat-form-field appearance="outline" style="min-width: 260px; margin-bottom: -1.25em;">
-        <mat-label>Select Company Holiday Date</mat-label>
-        <input [(ngModel)]="date" matInput [matDatepicker]="picker" placeholder="Choose date" required />
+<!-- Add / Edit Form -->
+<mat-card class="content-box" *ngIf="showForm">
+  <mat-card-header>
+    <mat-card-title>{{ editingDate ? 'Edit Holiday' : 'Add New Holiday' }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="form-row">
+
+      <mat-form-field appearance="outline" *ngIf="!editingDate">
+        <mat-label>Date</mat-label>
+        <input [(ngModel)]="form.date" matInput [matDatepicker]="picker" placeholder="Select date" required>
         <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
       </mat-form-field>
 
-      <button mat-raised-button color="primary" [disabled]="!date || loading" (click)="submit()" style="height: 48px;">
-        <mat-icon>add</mat-icon> Add Company Holiday
-      </button>
-    </div>
-  </mat-card>
+      <mat-form-field appearance="outline" *ngIf="editingDate">
+        <mat-label>Date</mat-label>
+        <input matInput [value]="editingDate" disabled>
+      </mat-form-field>
 
-  <!-- Holidays Table -->
-  <div class="table-wrapper" *ngIf="holidays && holidays.length; else noHolidays">
-    <table class="hrms-table">
-      <thead>
-        <tr>
-          <th>Holiday Date</th>
-          <th>Description / Title</th>
-          <th>Holiday Type</th>
-          <th *ngIf="auth.isAdminOrHR()" style="text-align: right;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let h of holidays; let i = index">
-          <td><strong>{{ h.leaveDate | date:'fullDate' }}</strong></td>
-          <td>{{ h.title || 'Official Holiday' }}</td>
-          <td>
-            <span class="status-badge" [style.background]="h.type === 'Personal' ? '#e0e7ff' : '#dcfce7'" [style.color]="h.type === 'Personal' ? '#4338ca' : '#15803d'">
-              {{ h.type === 'Personal' ? 'Personal Holiday' : 'Company Holiday' }}
-            </span>
-          </td>
-          <td *ngIf="auth.isAdminOrHR()" style="text-align: right;">
-            <button *ngIf="h.type === 'Company'" mat-icon-button color="warn" (click)="deleteHoliday(h.leaveDate, i)" matTooltip="Remove company holiday">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+      <mat-form-field appearance="outline">
+        <mat-label>Title *</mat-label>
+        <input matInput [(ngModel)]="form.title" placeholder="e.g. Republic Day" required>
+      </mat-form-field>
 
-  <ng-template #noHolidays>
-    <div class="no-data" style="background: #fff; padding: 48px 20px; text-align: center; border-radius: 12px; border: 1px dashed #cbd5e1;">
-      <mat-icon style="font-size: 40px; height: 40px; width: 40px; color: #94a3b8; margin-bottom: 8px;">event_busy</mat-icon>
-      <h3 style="margin: 0 0 6px 0; color: #1e293b;">No Holidays Configured</h3>
-      <p style="margin: 0; color: #64748b; font-size: 14px;">No upcoming company or personal holidays were found.</p>
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select [(ngModel)]="form.type">
+          <mat-option *ngFor="let t of holidayTypes" [value]="t">{{ t }}</mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
-  </ng-template>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput [(ngModel)]="form.description" rows="3"
+        placeholder="Optional details about this holiday"></textarea>
+    </mat-form-field>
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-raised-button color="primary" (click)="submit()" [disabled]="loading || !form.title.trim()">
+      {{ loading ? 'Saving...' : (editingDate ? 'Update' : 'Add Holiday') }}
+    </button>
+    <button mat-stroked-button (click)="cancelForm()" [disabled]="loading">Cancel</button>
+  </mat-card-actions>
+</mat-card>
+
+<!-- Holidays Table -->
+<div class="table-wrapper" *ngIf="holidays && holidays.length; else noHolidays">
+  <table class="pinnacle-table big-heading">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let h of holidays; let i = index">
+        <td><strong>{{ h.leaveDate | date:'mediumDate' }}</strong></td>
+        <td>{{ h.title }}</td>
+        <td>
+          <span class="status-badge" [ngClass]="h.type.toLowerCase()">{{ h.type }}</span>
+        </td>
+        <td>{{ h.description || '—' }}</td>
+        <td>
+          <button mat-icon-button color="primary" (click)="openEditForm(h)" matTooltip="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteHoliday(h, i)" matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
+
+<ng-template #noHolidays>
+  <div class="no-data">No holidays configured yet.</div>
+</ng-template>
 
 <loading [show]="loading"></loading>

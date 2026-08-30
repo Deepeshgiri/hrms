@@ -1,7 +1,39 @@
-[class*="col-"]{
-    padding:0 5px;
+.content-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.content-box{
-    margin-bottom: 10px;
+.content-box {
+  margin-bottom: 24px;
 }
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.form-row mat-form-field {
+  flex: 1;
+  min-width: 200px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-card-actions {
+  display: flex;
+  gap: 12px;
+  padding: 8px 16px 16px;
+}
+
+.status-badge.company   { background: #dcfce7; color: #15803d; }
+.status-badge.public    { background: #dbeafe; color: #1d4ed8; }
+.status-badge.optional  { background: #fef9c3; color: #854d0e; }
+.status-badge.restricted{ background: #fee2e2; color: #b91c1c; }

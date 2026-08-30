@@ -84,7 +84,10 @@ CREATE TABLE punch_mappings (
 ) ENGINE=InnoDB;
 
 CREATE TABLE institute_holidays (
-  leaveDate DATE PRIMARY KEY
+  leaveDate DATE PRIMARY KEY,
+  title VARCHAR(200) NOT NULL DEFAULT 'Official Holiday',
+  description TEXT,
+  type VARCHAR(50) NOT NULL DEFAULT 'Company'
 ) ENGINE=InnoDB;
 
 CREATE TABLE leaves (

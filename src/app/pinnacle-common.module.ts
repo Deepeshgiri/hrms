@@ -9,6 +9,8 @@ import { LoadingComponent } from './components/loading/loading.component';
 import { ModalDirective } from './components/modal/modal.directive';
 import { SimpleDialogComponent } from './components/simple-dialog/simple-dialog.component';
 import { SafePipe } from './pipes/safe.pipe';
+import { ShellComponent } from './components/shell/shell.component';
+import { CallOverlayComponent } from './components/call-overlay/call-overlay.component';
 
 @NgModule({
   declarations: [
@@ -18,6 +20,8 @@ import { SafePipe } from './pipes/safe.pipe';
     ModalDirective,
     SimpleDialogComponent,
     SafePipe,
+    ShellComponent,
+    CallOverlayComponent,
   ],
   imports: [CommonModule, FormsModule, RouterModule, MaterialModule],
   exports: [
@@ -31,6 +35,8 @@ import { SafePipe } from './pipes/safe.pipe';
     ModalDirective,
     SimpleDialogComponent,
     SafePipe,
+    ShellComponent,
+    CallOverlayComponent,
   ],
 })
 export class PinnacleCommonModule {}

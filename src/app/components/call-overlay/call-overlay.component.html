@@ -1,0 +1,69 @@
+<!-- ================= INCOMING CALL RINGING MODAL ================= -->
+<div class="incoming-call-modal" *ngIf="callState === 'incoming'">
+  <div class="incoming-card">
+    <div class="caller-avatar-pulse">
+      <div class="pulse-ring-call"></div>
+      <div class="avatar-circle">
+        <mat-icon style="font-size: 38px; height: 38px; width: 38px; color: white;">
+          {{ isVideoCall ? 'videocam' : 'person' }}
+        </mat-icon>
+      </div>
+    </div>
+
+    <h3 class="caller-name">{{ partnerName }}</h3>
+    <p class="call-type-subtitle">Incoming {{ isVideoCall ? 'Video' : 'Audio' }} Call...</p>
+
+    <div class="incoming-actions">
+      <!-- Reject Button -->
+      <button class="call-btn btn-decline" (click)="reject()" title="Decline Call">
+        <mat-icon>call_end</mat-icon>
+      </button>
+
+      <!-- Accept Button -->
+      <button class="call-btn btn-accept" (click)="answer()" title="Answer Call">
+        <mat-icon>{{ isVideoCall ? 'videocam' : 'call' }}</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= OUTGOING CALLING / CONNECTED SCREEN ================= -->
+<div class="active-call-overlay" *ngIf="callState === 'calling' || callState === 'connected'">
+  <div class="call-screen-container" [class.video-mode]="isVideoCall">
+    <!-- Video Streams (Only for Video Calls) -->
+    <div class="video-container" *ngIf="isVideoCall">
+      <video #remoteVideo autoplay playsinline class="remote-video"></video>
+      <video #localVideo autoplay playsinline muted class="local-video-pip" [class.hidden]="isVideoOff"></video>
+    </div>
+
+    <!-- Audio Call Avatar & Header -->
+    <div class="call-header-info" [class.floating-info]="isVideoCall">
+      <div class="audio-avatar-glow" *ngIf="!isVideoCall">
+        <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: white;">person</mat-icon>
+      </div>
+      <h2 class="call-partner-title">{{ partnerName }}</h2>
+      <div class="call-status-badge">
+        <span class="pulse-dot" *ngIf="callState === 'connected'"></span>
+        <span>{{ callState === 'connected' ? callDuration : (callData?.isRinging ? 'Ringing...' : 'Calling...') }}</span>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="call-controls-bar">
+      <!-- Mute Mic -->
+      <button class="ctrl-btn" [class.active-mute]="isAudioMuted" (click)="toggleMute()" title="Mute/Unmute">
+        <mat-icon>{{ isAudioMuted ? 'mic_off' : 'mic' }}</mat-icon>
+      </button>
+
+      <!-- Toggle Video Camera (Only for Video Calls) -->
+      <button class="ctrl-btn" *ngIf="isVideoCall" [class.active-mute]="isVideoOff" (click)="toggleVideo()" title="Camera On/Off">
+        <mat-icon>{{ isVideoOff ? 'videocam_off' : 'videocam' }}</mat-icon>
+      </button>
+
+      <!-- End Call Button (Red) -->
+      <button class="ctrl-btn btn-hangup" (click)="hangUp()" title="End Call">
+        <mat-icon>call_end</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

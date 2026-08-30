@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DialogService } from 'src/app/service/dialog.service';
+import { SharedAuthService } from 'src/app/service/shared-auth.service';
 import { LeaveService } from '../leave.service';
 
 @Component({
@@ -9,54 +10,69 @@ import { LeaveService } from '../leave.service';
   styleUrls: ['./institute-holidays.component.css']
 })
 export class InstituteHolidaysComponent implements OnInit {
+  loading: boolean = false;
+  holidays: any[] = [];
+  date: any = null;
 
-  loading: boolean
-  holidays = []
-  date
-
-  constructor(private leaveService: LeaveService, private dialog: DialogService) { }
+  constructor(
+    private leaveService: LeaveService,
+    public auth: SharedAuthService,
+    private dialog: DialogService
+  ) { }
 
   ngOnInit(): void {
-    this.getHolidays()
+    this.getHolidays();
   }
 
-  //Get Holidays
   getHolidays() {
-    this.loading = true
-    this.leaveService.getInstituteHolidays().subscribe((result: any) => {
-      this.loading = false
-      this.holidays = result
-    })
-  }
-
-  // Delete Holiday 
-  deleteHoliday(date, index) {
-
-    this.dialog.showDialog({
-      content: `Are you sure to delete "${date}"?`,
-      callBack: () => {
-        this.loading = true
-        let dateDB = new Date(date + " UTC").toISOString().substring(0, 10)
-        this.leaveService.deleteInstituteHoliday(dateDB).subscribe((result: any) => {
-          this.loading = false
-          if (result.success) {
-            this.holidays.splice(index, 1)
-          }
-        })
+    this.loading = true;
+    this.leaveService.getInstituteHolidays().subscribe({
+      next: (result: any) => {
+        this.loading = false;
+        this.holidays = result || [];
+      },
+      error: () => {
+        this.loading = false;
       }
-    })
+    });
   }
 
-  //Submit
+  deleteHoliday(date: string, index: number) {
+    this.dialog.showDialog({
+      content: `Are you sure to delete company holiday "${date}"?`,
+      callBack: () => {
+        this.loading = true;
+        let dateDB = new Date(date + " UTC").toISOString().substring(0, 10);
+        this.leaveService.deleteInstituteHoliday(dateDB).subscribe({
+          next: (result: any) => {
+            this.loading = false;
+            if (result.success) {
+              this.holidays.splice(index, 1);
+            }
+          },
+          error: () => {
+            this.loading = false;
+          }
+        });
+      }
+    });
+  }
+
   submit() {
     const dateStr = this.toYmd(this.date);
     if (!dateStr) return;
-    this.loading = true
-    this.leaveService.addInstituteHoliday(dateStr).subscribe((result: any) => {
-      this.loading = false
-      this.getHolidays()
-      this.dialog.showDialog({ content: result.message })
-    })
+    this.loading = true;
+    this.leaveService.addInstituteHoliday(dateStr).subscribe({
+      next: (result: any) => {
+        this.loading = false;
+        this.date = null;
+        this.getHolidays();
+        this.dialog.showDialog({ content: result.message });
+      },
+      error: () => {
+        this.loading = false;
+      }
+    });
   }
 
   private toYmd(d: any): string | null {
@@ -67,5 +83,4 @@ export class InstituteHolidaysComponent implements OnInit {
     const day = String(dt.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   }
-
 }

@@ -1,71 +1,170 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <div class="leave-row">
-       
-        <button mat-raised-button (click)="applyLeave()"> <mat-icon>add</mat-icon>Apply Leave</button>
+<div class="leave-home-container">
+  <!-- Top Bar: Financial Year Badge & Action Buttons -->
+  <div class="fy-header-bar">
+    <div class="fy-badge-wrapper">
+      <mat-icon style="color: #6366f1;">event_repeat</mat-icon>
+      <div class="fy-info-text">
+        <span class="fy-title">{{ leavesInfo?.fyLabel || 'Financial Year: 2026-2027 (Apr 2026 - Mar 2027)' }}</span>
+        <span class="fy-subtitle">Annual quota auto-resets and carries forward on March 31</span>
+      </div>
     </div>
-    <ng-container *ngIf="leaves && leaves.length">
-        <div class="content-title">Recent Leaves <div id="leavesMessage" *ngIf="leavesInfo"> 
-            <span [innerText]="leavesInfo.remainingLeaves"></span> Leaves Remaining </div></div>
-        <table class="pinnacle-table big-heading">
-            <tr>
-                <th>Leave</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Reason</th>
-                <th>Date</th>
-                <th>Response</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            <ng-container *ngFor="let leave of leaves">
-                <tr>
-                    <td [innerHTML]="leave.leaveContent | safe"></td>
-                    <td>{{leave.fromDate}}</td>
-                    <td>{{leave.toDate}}</td>
-                    <td>{{leave.reason}}</td>
-                    <td>{{leave.timestamp}}</td>
-                    <td>{{leave.response}}</td>
-                    <td>{{leave.status}}</td>
-                    <td>
-                        <ng-container *ngIf="leave.status=='Pending'">
-                            <button mat-mini-fab color="primary" (click)="editLeave(leave)">
-                                <mat-icon>create</mat-icon>
-                            </button>&nbsp;&nbsp;
-                            <button mat-mini-fab color="warn" (click)="deleteLeave(leave)">
-                                <mat-icon>delete</mat-icon>
-                            </button>
-                        </ng-container>
-                    </td>
-                </tr>
+
+    <div class="fy-actions-bar">
+      <button
+        *ngIf="auth.isAdminOrHR()"
+        mat-stroked-button
+        style="color: #4f46e5; border-color: #c7d2fe; background: #ffffff;"
+        [disabled]="rollingOver"
+        (click)="triggerFinancialYearRollover()"
+        matTooltip="Run Annual Reset & Auto-Allotment for the new financial year"
+      >
+        <mat-icon>autorenew</mat-icon>
+        <span>{{ rollingOver ? 'Processing...' : 'Annual FY Rollover' }}</span>
+      </button>
+
+      <button mat-raised-button color="primary" (click)="applyLeave()">
+        <mat-icon>add</mat-icon> Apply Leave
+      </button>
+    </div>
+  </div>
+
+  <!-- Granular Leave Type Cards (Casual Leave, Sick Leave, Earned Leave, etc.) -->
+  <div class="leave-type-cards-grid" *ngIf="leavesInfo?.leaveTypes && leavesInfo.leaveTypes.length > 0">
+    <div
+      *ngFor="let lt of leavesInfo.leaveTypes"
+      class="leave-card"
+      [style.border-left]="'4px solid ' + lt.colorCode"
+    >
+      <div class="leave-card-top">
+        <div class="leave-icon-box" [style.background-color]="lt.colorCode + '18'" [style.color]="lt.colorCode">
+          <mat-icon>{{ lt.icon || 'beach_access' }}</mat-icon>
+        </div>
+        <div class="leave-title-box">
+          <span class="leave-type-name">{{ lt.name }}</span>
+          <span class="leave-type-code">{{ lt.code }}</span>
+        </div>
+      </div>
+
+      <div class="leave-card-metric">
+        <div class="remaining-big" [style.color]="lt.colorCode">
+          {{ lt.remaining }} <span class="days-label">Days Left</span>
+        </div>
+      </div>
+
+      <div class="leave-card-footer">
+        <span class="allotted-text">Allotted: <strong>{{ lt.allotted }}</strong></span>
+        <span class="carried-text" *ngIf="lt.carried > 0">+{{ lt.carried }} carried</span>
+        <span class="used-text">Used: <strong>{{ lt.used }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Total Leave Summary Card -->
+    <div class="leave-card summary-card" style="border-left: 4px solid #0f172a; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white;">
+      <div class="leave-card-top">
+        <div class="leave-icon-box" style="background: rgba(255,255,255,0.15); color: #ffffff;">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div class="leave-title-box">
+          <span class="leave-type-name" style="color: #ffffff;">Total Balance</span>
+          <span class="leave-type-code" style="color: #94a3b8;">ALL TYPES</span>
+        </div>
+      </div>
+
+      <div class="leave-card-metric">
+        <div class="remaining-big" style="color: #38bdf8;">
+          {{ leavesInfo?.summary?.totalRemaining || leavesInfo?.remainingLeaves || 0 }} <span class="days-label" style="color: #94a3b8;">Days Left</span>
+        </div>
+      </div>
+
+      <div class="leave-card-footer" style="color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.1);">
+        <span>Quota: <strong>{{ leavesInfo?.summary?.totalQuota || leavesInfo?.totalLeaves || 0 }}</strong></span>
+        <span>Used: <strong style="color: #f87171;">{{ leavesInfo?.summary?.totalUsed || leavesInfo?.usedLeaves || 0 }}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leave History Section -->
+  <div class="content-title" style="margin-top: 24px;">My Leave Applications</div>
+
+  <div class="table-wrapper" *ngIf="leaves && leaves.length">
+    <table class="pinnacle-table big-heading">
+      <thead>
+        <tr>
+          <th>Leave Type</th>
+          <th>Description</th>
+          <th>From Date</th>
+          <th>To Date</th>
+          <th>Reason</th>
+          <th>Applied On</th>
+          <th>HR Note</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let leave of leaves">
+          <td>
+            <span
+              class="leave-type-pill"
+              [ngStyle]="getLeaveTypeBadgeStyle(leave.leaveType, leave.leaveTypeColor)"
+            >
+              <mat-icon style="font-size: 14px; height: 14px; width: 14px; vertical-align: middle;">
+                {{ leave.leaveTypeIcon || 'beach_access' }}
+              </mat-icon>
+              {{ leave.leaveTypeName || leave.leaveType || 'Leave' }}
+            </span>
+          </td>
+          <td><strong>{{ leave.leaveContent }}</strong></td>
+          <td>{{ leave.fromDate }}</td>
+          <td>{{ leave.toDate }}</td>
+          <td style="max-width: 200px;">{{ leave.reason }}</td>
+          <td>{{ leave.timestamp | date:'mediumDate' }}</td>
+          <td>{{ leave.response || '—' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="leave.status.toLowerCase()">{{ leave.status }}</span>
+          </td>
+          <td>
+            <ng-container *ngIf="leave.status === 'Pending'">
+              <button mat-icon-button color="primary" (click)="editLeave(leave)" matTooltip="Edit application">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteLeave(leave)" matTooltip="Cancel/Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
             </ng-container>
-        </table>
-    </ng-container>
-    <div class="no-data perfect-centered" *ngIf="leaves && !leaves.length">No leaves requested</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="no-data" *ngIf="leaves && !leaves.length" style="padding: 40px; text-align: center; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 16px;">
+    <mat-icon style="font-size: 40px; height: 40px; width: 40px; color: #cbd5e1; margin-bottom: 8px;">beach_access</mat-icon>
+    <div style="font-size: 15px; font-weight: 600; color: #475569;">No leaves requested for this period</div>
+    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Click "Apply Leave" above to submit a new leave request.</div>
+  </div>
 </div>
+
 <loading [show]="loading"></loading>
 
-<!--Edit Leave  -->
-<div class="modal" modal [show]="modals.editLeave" [options]="{width:'900px'}">
-    <div class="dialog">
-        <div class="modal-header">Edit Leave</div>
-        <div class='close' (click)="modals.editLeave=false">&times;</div>
-        <div class="modal-body">
-            <edit-leave *ngIf="modals.editLeave" [leave]="activeLeave" [modal]="modals" ></edit-leave>
-        </div>
-
+<!-- Edit Leave Modal -->
+<div class="modal" modal [show]="modals.editLeave" [options]="{width:'850px'}">
+  <div class="dialog">
+    <div class="modal-header">Edit Leave Application</div>
+    <div class="close" (click)="modals.editLeave = false">&times;</div>
+    <div class="modal-body">
+      <edit-leave *ngIf="modals.editLeave" [leave]="activeLeave" [modal]="modals"></edit-leave>
     </div>
+  </div>
 </div>
 
-<!-- Request Leave -->
-<div class="modal" modal [show]="modals.requestLeave" [options]="{width:'900px'}">
-    <div class="dialog">
-        <div class="modal-header">Request Leave</div>
-        <div class='close' (click)="modals.requestLeave=false">&times;</div>
-        <div class="modal-body">
-            <app-request-leave *ngIf="modals.requestLeave" [isModal]="true"></app-request-leave>
-        </div>
-
+<!-- Request Leave Modal -->
+<div class="modal" modal [show]="modals.requestLeave" [options]="{width:'850px'}">
+  <div class="dialog">
+    <div class="modal-header">Submit Leave Application</div>
+    <div class="close" (click)="modals.requestLeave = false">&times;</div>
+    <div class="modal-body">
+      <app-request-leave *ngIf="modals.requestLeave" [isModal]="true" (submitted)="onLeaveSubmitted()"></app-request-leave>
     </div>
+  </div>
 </div>

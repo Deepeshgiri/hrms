@@ -1,47 +1,108 @@
-<div class="login-container">
-  <div class="login-card">
-    <h2>HRMS Login</h2>
-    
-    <form (ngSubmit)="login()" #loginForm="ngForm">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          [(ngModel)]="email" 
-          name="email"
-          placeholder="Enter your email"
-          required
-        />
+<div class="login-wrapper">
+  <div class="login-container">
+    <!-- Left Hero Banner -->
+    <div class="login-hero">
+      <div class="hero-content">
+        <div class="brand-badge">
+          <span class="brand-icon">🏢</span>
+          <span class="brand-name">HRMS Enterprise</span>
+        </div>
+        <h1 class="hero-heading">Modern Workforce & Talent Management</h1>
+        <p class="hero-subheading">
+          Streamline attendance tracking, leave requests, employee directory, biometric synchronization, and payroll management with complete confidence.
+        </p>
+
+        <div class="hero-features">
+          <div class="feature-item">
+            <span class="f-icon">⏱️</span>
+            <span>Real-time Attendance & Web Clock In</span>
+          </div>
+          <div class="feature-item">
+            <span class="f-icon">🌴</span>
+            <span>Automated Leave Balances & Approval Flow</span>
+          </div>
+          <div class="feature-item">
+            <span class="f-icon">💳</span>
+            <span>Accurate Payroll & One-Click Payslips</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Login Form -->
+    <div class="login-form-pane">
+      <div class="form-header">
+        <h2>Welcome back</h2>
+        <p>Sign in to access your HRMS portal</p>
       </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          [(ngModel)]="password" 
-          name="password"
-          placeholder="Enter your password"
-          required
-        />
+      <!-- Quick Demo Login Selection -->
+      <div class="demo-box">
+        <div class="demo-title">⚡ Quick Demo Login</div>
+        <div class="demo-buttons">
+          <button 
+            type="button" 
+            *ngFor="let acc of demoAccounts" 
+            class="demo-chip"
+            (click)="fillDemo(acc)"
+          >
+            <span class="chip-icon">{{acc.icon}}</span>
+            <span class="chip-label">{{acc.role}}</span>
+          </button>
+        </div>
       </div>
 
-      <div *ngIf="error" class="error-message">
-        {{ error }}
+      <div class="divider">
+        <span>or enter credentials</span>
       </div>
 
-      <button 
-        type="submit" 
-        [disabled]="loading"
-        class="btn-login"
-      >
-        {{ loading ? 'Logging in...' : 'Login' }}
-      </button>
-    </form>
+      <form (ngSubmit)="login()" #loginForm="ngForm" class="auth-form">
+        <div class="form-group">
+          <label for="email">Work Email</label>
+          <div class="input-wrapper">
+            <input 
+              type="email" 
+              id="email" 
+              [(ngModel)]="email" 
+              name="email"
+              placeholder="name@hrms.com"
+              required
+            />
+          </div>
+        </div>
 
-    <div class="footer">
-      <p>Or go to <a href="http://localhost:4200">Test Project</a></p>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              [(ngModel)]="password" 
+              name="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+        </div>
+
+        <div *ngIf="error" class="error-alert">
+          <span class="error-icon">⚠️</span>
+          <span>{{ error }}</span>
+        </div>
+
+        <button 
+          type="submit" 
+          [disabled]="loading"
+          class="btn-submit"
+        >
+          <span *ngIf="!loading">Sign In to Dashboard</span>
+          <span *ngIf="loading" class="spinner-text">Authenticating...</span>
+        </button>
+      </form>
+
+      <div class="form-footer">
+        <p>HRMS Enterprise &bull; Secure Access &bull; v2.0</p>
+      </div>
     </div>
   </div>
 </div>

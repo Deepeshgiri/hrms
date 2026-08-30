@@ -9,7 +9,7 @@ export const signToken = (user) =>
       userId: user.id,
       name: user.name,
       email: user.email,
-      roleId: user.roleId,
+      roleId: user.roleId || 3,
       tenantId: user.tenantId || 1,
     },
     JWT_SECRET,
@@ -36,3 +36,27 @@ export const authMiddleware = (req, res, next) => {
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
 };
+
+/**
+ * Role-Based Access Control (RBAC) middleware factory
+ * Role IDs: 1: Admin, 2: HR Manager, 3: Employee, 4: Finance
+ */
+export const requireRoles = (allowedRoleIds = []) => (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  const userRoleId = Number(req.user.roleId);
+  if (!allowedRoleIds.includes(userRoleId)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied: You do not have permission to access this resource',
+    });
+  }
+
+  next();
+};
+
+export const requireAdmin = requireRoles([1]);
+export const requireAdminOrHR = requireRoles([1, 2]);
+export const requireFinanceOrAdmin = requireRoles([1, 2, 4]);

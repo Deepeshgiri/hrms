@@ -1,69 +1,87 @@
-<admin-header *ngIf="!isModal"></admin-header>
-<admin-sidebar *ngIf="!isModal"></admin-sidebar>
-<div id="page-content">
-    <div class="content-title">Request Leave</div>
-    <div class="content-box">
-        <form #leaveForm="ngForm" (ngSubmit)="submitLeave(leaveForm.value)">
-            <mat-form-field>
-                <mat-label>Type Leave</mat-label>
-                <textarea name="leaveContent" rows="5" matInput ngModel required></textarea>
-            </mat-form-field>
-            <div style="height:10px"></div>
-            <div class="row align-items-center">
-                <div class="col-sm-1">
-                    <mat-form-field>
-                        <mat-label>Duration</mat-label>
-                        <mat-select name="duration" ngModel="F" #duration="ngModel" required>
-                            <mat-option value="H">Half Day</mat-option>
-                            <mat-option value="F">Full Day</mat-option>
-                            <mat-option value="R">Range</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-                <ng-container *ngIf="duration.value=='R'">
-                    <div class="col-sm-3">
-                        <mat-form-field>
-                            <input name="fromDate" ngModel matInput [matDatepicker]="fromPicker"
-                                placeholder="From Date" required>
-                            <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
-                            <mat-datepicker #fromPicker></mat-datepicker>
-                        </mat-form-field>
-                    </div>
-                    <div class="col-sm-3">
-                        <mat-form-field>
-                            <input name="toDate" ngModel matInput [matDatepicker]="toPicker"
-                                placeholder="To Date" required>
-                            <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
-                            <mat-datepicker #toPicker></mat-datepicker>
-                        </mat-form-field>
-                    </div>
-                </ng-container>
-                <div class="col-sm-3" *ngIf="duration.value!='R'">
-                    <mat-form-field>
-                        <input name="date" ngModel matInput [matDatepicker]="datePicker"
-                            placeholder="Date" required>
-                        <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
-                        <mat-datepicker #datePicker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-                <div class="col-sm-3" *ngIf="duration.value=='H'">
-                    <mat-radio-group ngModel name="half" required>
-                        <mat-radio-button value="1">First Half</mat-radio-button>&nbsp;
-                        <mat-radio-button value="2">Second Half</mat-radio-button>
-                    </mat-radio-group>
-                </div>
-                <div class="col-sm-2">
-                    <mat-form-field>
-                        <mat-label>Reason</mat-label>
-                        <input name="reason" ngModel matInput placeholder="Like Marriage Event etc." required>
-                    </mat-form-field>
-                </div>
-                <div class="col-sm-2">
-                    <button type="submit" mat-raised-button color="primary"
-                        [disabled]="leaveForm.invalid">Submit</button>
-                </div>
+<div class="content-title" *ngIf="!isModal">Request Leave</div>
+<div class="content-box">
+  <form #leaveForm="ngForm" (ngSubmit)="submitLeave(leaveForm.value)">
+    <!-- Leave Type Selection Strip -->
+    <div class="leave-type-selector-row" style="margin-bottom: 18px;" *ngIf="leavesInfo?.leaveTypes && leavesInfo.leaveTypes.length > 0">
+      <label style="font-size: 13px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 8px;">Select Leave Type *</label>
+      <div class="type-chips-grid">
+        <div
+          *ngFor="let lt of leavesInfo.leaveTypes"
+          class="type-chip-card"
+          [class.selected]="selectedLeaveType === lt.code"
+          [style.border-color]="selectedLeaveType === lt.code ? lt.colorCode : '#e2e8f0'"
+          [style.background]="selectedLeaveType === lt.code ? lt.colorCode + '12' : '#ffffff'"
+          (click)="selectedLeaveType = lt.code"
+        >
+          <div class="chip-icon" [style.color]="lt.colorCode">
+            <mat-icon style="font-size: 20px;">{{ lt.icon || 'beach_access' }}</mat-icon>
+          </div>
+          <div class="chip-info">
+            <div class="chip-name" [style.color]="selectedLeaveType === lt.code ? lt.colorCode : '#1e293b'">
+              {{ lt.name }}
             </div>
-        </form>
+            <div class="chip-quota">
+              <strong>{{ lt.remaining }}</strong> / {{ lt.totalQuota }} days left
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" name="leaveType" [ngModel]="selectedLeaveType" />
     </div>
+
+    <mat-form-field class="full-width">
+      <mat-label>Leave Description / Subject *</mat-label>
+      <textarea name="leaveContent" rows="2" matInput ngModel required placeholder="e.g. Taking leave for personal family event"></textarea>
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field>
+        <mat-label>Duration</mat-label>
+        <mat-select name="duration" ngModel="F" #duration="ngModel" required>
+          <mat-option value="H">Half Day (0.5 day)</mat-option>
+          <mat-option value="F">Full Day (1.0 day)</mat-option>
+          <mat-option value="R">Date Range</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <ng-container *ngIf="duration.value === 'R'">
+        <mat-form-field>
+          <mat-label>From Date</mat-label>
+          <input name="fromDate" ngModel matInput [matDatepicker]="fromPicker" required>
+          <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>To Date</mat-label>
+          <input name="toDate" ngModel matInput [matDatepicker]="toPicker" required>
+          <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+      </ng-container>
+
+      <mat-form-field *ngIf="duration.value !== 'R'">
+        <mat-label>Date</mat-label>
+        <input name="date" ngModel matInput [matDatepicker]="datePicker" required>
+        <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+        <mat-datepicker #datePicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-radio-group ngModel name="half" *ngIf="duration.value === 'H'" required class="half-radio">
+        <mat-radio-button value="1">First Half</mat-radio-button>
+        <mat-radio-button value="2">Second Half</mat-radio-button>
+      </mat-radio-group>
+
+      <mat-form-field style="flex: 2;">
+        <mat-label>Reason *</mat-label>
+        <input name="reason" ngModel matInput required placeholder="Detailed reason for approval">
+      </mat-form-field>
+
+      <div style="display: flex; align-items: center; justify-content: flex-end; width: 100%; margin-top: 10px;">
+        <button type="submit" mat-raised-button color="primary" [disabled]="leaveForm.invalid || loading" style="padding: 6px 24px;">
+          <mat-icon>send</mat-icon> {{ loading ? 'Submitting...' : 'Submit Application' }}
+        </button>
+      </div>
+    </div>
+  </form>
 </div>
 <loading [show]="loading"></loading>

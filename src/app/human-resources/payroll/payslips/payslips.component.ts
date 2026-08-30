@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CoreService } from '../../../service/core.service';
+import { SharedAuthService } from '../../../service/shared-auth.service';
 import { AppConstants } from '../../../AppConstants';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -29,6 +30,7 @@ export class PayslipsComponent implements OnInit {
 
   constructor(
     private coreService: CoreService,
+    public auth: SharedAuthService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -53,7 +55,7 @@ export class PayslipsComponent implements OnInit {
   }
 
   generateAllPayslips(): void {
-    if (!confirm('Generate payslips for all employees? This will overwrite existing drafts.')) return;
+    if (!confirm('Generate payslips for all employees? This will calculate gross and net salaries.')) return;
     
     this.loading = true;
     this.coreService.postRequest(`${AppConstants.API_URL}hr/payroll/generate-all-payslips`, 
@@ -86,12 +88,14 @@ export class PayslipsComponent implements OnInit {
   }
   
   downloadPayslip(payslip: any): void {
-    const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download`;
+    const token = this.auth.getToken();
+    const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download${token ? '?token=' + encodeURIComponent(token) : ''}`;
     window.open(url, '_blank');
   }
   
   viewPayslip(payslip: any): void {
-    const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download`;
+    const token = this.auth.getToken();
+    const url = `${AppConstants.API_URL}hr/payroll/payslip/${payslip.id}/download${token ? '?token=' + encodeURIComponent(token) : ''}`;
     window.open(url, '_blank');
   }
 

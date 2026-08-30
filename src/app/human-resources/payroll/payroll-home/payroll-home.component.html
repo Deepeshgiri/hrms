@@ -1,52 +1,88 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-  <div class="content-title">💰 Payroll Dashboard</div>
+<div class="payroll-home-container">
+  <div class="page-header-title">
+    <span>💰 {{ auth.isEmployee() ? 'My Payroll & Salary Overview' : 'Payroll Overview & Statistics' }}</span>
+    <a routerLink="/users/human-resources/payroll/payslips" class="btn btn-primary">
+      <mat-icon>receipt_long</mat-icon> {{ auth.isEmployee() ? 'View My Payslips' : 'Manage Payslips' }}
+    </a>
+  </div>
   
   <div class="stats-grid">
-    <div class="stat-card employees">
-      <mat-icon>people</mat-icon>
-      <div class="stat-value">{{stats.totalEmployees}}</div>
-      <div class="stat-label">Total Employees</div>
+    <div class="stat-card employees" *ngIf="!auth.isEmployee()">
+      <div class="stat-icon-wrapper"><mat-icon>people</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Employees</span>
+        <span class="stat-value">{{ stats.totalEmployees }}</span>
+      </div>
     </div>
+
     <div class="stat-card processed">
-      <mat-icon>check_circle</mat-icon>
-      <div class="stat-value">{{stats.processedPayslips}}</div>
-      <div class="stat-label">Processed Payslips</div>
+      <div class="stat-icon-wrapper" style="background:#dcfce7; color:#15803d;"><mat-icon>check_circle</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">{{ auth.isEmployee() ? 'Issued Payslips' : 'Processed Payslips' }}</span>
+        <span class="stat-value">{{ stats.processedPayslips }}</span>
+      </div>
     </div>
-    <div class="stat-card pending">
-      <mat-icon>pending</mat-icon>
-      <div class="stat-value">{{stats.pendingPayslips}}</div>
-      <div class="stat-label">Pending Payslips</div>
+
+    <div class="stat-card pending" *ngIf="!auth.isEmployee()">
+      <div class="stat-icon-wrapper" style="background:#fef3c7; color:#b45309;"><mat-icon>pending</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Draft / Pending</span>
+        <span class="stat-value">{{ stats.pendingPayslips }}</span>
+      </div>
     </div>
+
     <div class="stat-card payroll">
-      <mat-icon>account_balance_wallet</mat-icon>
-      <div class="stat-value">₹{{stats.totalPayroll | number}}</div>
-      <div class="stat-label">Total Payroll</div>
+      <div class="stat-icon-wrapper" style="background:#e0f2fe; color:#0369a1;"><mat-icon>account_balance_wallet</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">{{ auth.isEmployee() ? 'Total Net Received' : 'Total Monthly Payroll' }}</span>
+        <span class="stat-value">&#8377;{{ (stats.totalPayroll | number) || '0' }}</span>
+      </div>
     </div>
   </div>
 
-  <div class="action-grid">
-    <div class="action-card" routerLink="/users/human-resources/payroll/salary-structure">
-      <mat-icon>account_balance</mat-icon>
-      <h3>Salary Structure</h3>
-      <p>Manage employee salary structures</p>
-    </div>
-    <div class="action-card" routerLink="/users/human-resources/payroll/payslips">
-      <mat-icon>receipt_long</mat-icon>
-      <h3>Payslips</h3>
-      <p>Generate and manage payslips</p>
-    </div>
-    <div class="action-card" routerLink="/users/human-resources/increments">
-      <mat-icon>trending_up</mat-icon>
-      <h3>Increments</h3>
-      <p>Manage salary increments</p>
-    </div>
-    <div class="action-card" routerLink="/users/human-resources/analytics">
-      <mat-icon>analytics</mat-icon>
-      <h3>Reports</h3>
-      <p>Payroll analytics and reports</p>
-    </div>
+  <div class="action-grid" style="margin-top: 24px;">
+    <!-- For Employees -->
+    <ng-container *ngIf="auth.isEmployee()">
+      <div class="action-card" routerLink="/users/human-resources/payroll/payslips">
+        <mat-icon color="primary">receipt_long</mat-icon>
+        <h3>My Monthly Payslips</h3>
+        <p>View breakdown of earnings, deductions, and download official PDF payslips</p>
+      </div>
+      <div class="action-card" routerLink="/users/human-resources/attendance">
+        <mat-icon color="primary">calendar_month</mat-icon>
+        <h3>Attendance & Shift History</h3>
+        <p>Review working days and hours that factor into your monthly payroll</p>
+      </div>
+      <div class="action-card" routerLink="/users/human-resources/leaves">
+        <mat-icon color="primary">event_note</mat-icon>
+        <h3>Leaves & Deductions</h3>
+        <p>Track applied leaves and available paid leave balance</p>
+      </div>
+    </ng-container>
+
+    <!-- For Admin / HR / Finance -->
+    <ng-container *ngIf="!auth.isEmployee()">
+      <div class="action-card" routerLink="/users/human-resources/payroll/salary-structure">
+        <mat-icon color="primary">account_balance</mat-icon>
+        <h3>Salary Structures</h3>
+        <p>Configure base salaries, HRA, allowances, and deductions per employee</p>
+      </div>
+      <div class="action-card" routerLink="/users/human-resources/payroll/payslips">
+        <mat-icon color="primary">receipt_long</mat-icon>
+        <h3>Monthly Payslips</h3>
+        <p>Generate, review, mark as paid, and print employee payslips</p>
+      </div>
+      <div class="action-card" routerLink="/users/human-resources/analytics" *ngIf="auth.isAdminOrHR()">
+        <mat-icon color="primary">insights</mat-icon>
+        <h3>Payroll Analytics</h3>
+        <p>Analyze organization payroll distribution and expenses</p>
+      </div>
+      <div class="action-card" routerLink="/users/human-resources/employees" *ngIf="auth.isAdminOrHR()">
+        <mat-icon color="primary">people</mat-icon>
+        <h3>Employee Directory</h3>
+        <p>View employee roles, departments, and compensation details</p>
+      </div>
+    </ng-container>
   </div>
 </div>
 <loading [show]="loading"></loading>

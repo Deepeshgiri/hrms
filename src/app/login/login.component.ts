@@ -14,10 +14,16 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
-  email: string = '';
-  password: string = '';
+  email: string = 'admin@hrms.com';
+  password: string = 'admin123';
   loading: boolean = false;
   error: string = '';
+
+  demoAccounts = [
+    { role: 'Admin', email: 'admin@hrms.com', password: 'admin123', name: 'System Admin', icon: '⚡' },
+    { role: 'HR Manager', email: 'ayesha@hrms.com', password: 'hr123', name: 'Ayesha Khan', icon: '💼' },
+    { role: 'Employee', email: 'rahul@hrms.com', password: 'emp123', name: 'Rahul Sharma', icon: '👤' },
+  ];
 
   constructor(
     private coreService: CoreService,
@@ -27,13 +33,20 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/users/human-resources']);
     }
+  }
+
+  fillDemo(account: { email: string; password: string }): void {
+    this.email = account.email;
+    this.password = account.password;
+    this.error = '';
+    this.login();
   }
 
   login(): void {
     if (!this.email || !this.password) {
-      this.error = 'Email and password are required';
+      this.error = 'Please enter both email and password';
       return;
     }
 
@@ -51,20 +64,16 @@ export class LoginComponent implements OnInit {
           if (response.tenantId) {
             this.authService.setTenantId(response.tenantId);
           }
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/users/human-resources']);
         } else {
           this.error = 'Invalid response from server';
         }
         this.loading = false;
       },
       error: (err: any) => {
-        this.error = err.error?.message || 'Login failed. Please try again.';
+        this.error = err.error?.message || 'Login failed. Please check your credentials.';
         this.loading = false;
       }
     });
-  }
-
-  goToTestProject(): void {
-    window.location.href = 'http://localhost:4200';
   }
 }

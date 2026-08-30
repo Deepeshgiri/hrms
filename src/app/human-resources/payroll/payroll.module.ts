@@ -7,11 +7,12 @@ import { SalaryStructureComponent } from './salary-structure/salary-structure.co
 import { PayrollHomeComponent } from './payroll-home/payroll-home.component';
 import { SalaryStructureFormComponent } from './salary-structure/salary-structure-form/salary-structure-form.component';
 import { MaterialModule } from 'src/app/material.module';
+import { roleGuard } from 'src/app/guards/role.guard';
 
 const routes: Routes = [
   { path: '', component: PayrollHomeComponent },
   { path: 'payslips', component: PayslipsComponent },
-  { path: 'salary-structure', component: SalaryStructureComponent }
+  { path: 'salary-structure', component: SalaryStructureComponent, canActivate: [roleGuard], data: { roles: [1, 2, 4] } }
 ];
 
 @NgModule({

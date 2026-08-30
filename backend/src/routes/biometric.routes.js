@@ -1,11 +1,12 @@
 import express from 'express';
 import { pool } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, toIso, todayStr, pad } from '../helpers.js';
 
 const router = express.Router();
 
 router.use(authMiddleware);
+router.use(requireAdminOrHR);
 
 // GET /bio/biometric/devices
 router.get(

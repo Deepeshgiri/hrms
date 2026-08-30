@@ -4,65 +4,80 @@ import { CoreService } from "../../service/core.service";
 import { LeaveForm, UsersLeavesInfo } from "./leave.modal";
 
 @Injectable({
-    providedIn: 'root',
+  providedIn: 'root',
 })
 export class LeaveService {
-    constructor(private coreService: CoreService) { }
+  constructor(private coreService: CoreService) {}
 
-    getMyLeaves() {
-        return this.coreService.getRequest(AppConstants.API_URL + "leaves/my")
-    }
+  getLeaveTypes() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/types");
+  }
 
-    getUsersLeaves() {
-        return this.coreService.getRequest(AppConstants.API_URL + "leaves")
-    }
+  getMyLeaves() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/my");
+  }
 
-    getMyLeavesInfo() {
-        return this.coreService.getRequest(AppConstants.API_URL + "leaves/my-leaves-info")
-    }
+  getUsersLeaves() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves");
+  }
 
-    getUsersLeavesInfo() {
-        return this.coreService.getRequest(AppConstants.API_URL + "leaves/users-leaves-info")
-    }
+  getMyLeavesInfo() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/my-leaves-info");
+  }
 
-    getPendingLeavesCount() {
-        return this.coreService.getRequest(AppConstants.API_URL + "leaves/pending-leaves-count")
-    }
+  getUserDetailedBalances(userId: number) {
+    return this.coreService.getRequest(AppConstants.API_URL + `leaves/user/${userId}/balances`);
+  }
 
-    submitLeave(data: LeaveForm) {
-        return this.coreService.postRequest(AppConstants.API_URL + "leaves/", data)
-    }
+  getUsersLeavesInfo() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/users-leaves-info");
+  }
 
-    updateUserLeaveInfo(userLeaveInfo: UsersLeavesInfo) {
-        return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-user-leave-info", userLeaveInfo)
-    }
+  getPendingLeavesCount() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/pending-leaves-count");
+  }
 
-    reCalculateLeaves() {
-        return this.coreService.putRequest(AppConstants.API_URL + "leaves/re-calculate-leaves", {})
-    }
+  submitLeave(data: LeaveForm) {
+    return this.coreService.postRequest(AppConstants.API_URL + "leaves/", data);
+  }
 
-    acceptRejectLeave(leaveId: string | number, status: string, response: string, userId: string | number) {
-        return this.coreService.putRequest(AppConstants.API_URL + "leaves/", { leaveId, status, response, userId })
-    }
+  updateUserLeaveInfo(userLeaveInfo: UsersLeavesInfo) {
+    return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-user-leave-info", userLeaveInfo);
+  }
 
-    updateLeave(data: any) {
-        return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-leave", data)
-    }
+  reCalculateLeaves() {
+    return this.coreService.putRequest(AppConstants.API_URL + "leaves/re-calculate-leaves", {});
+  }
 
-    deleteLeave(leaveId: string | number) {
-        return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/" + leaveId)
-    }
+  acceptRejectLeave(leaveId: string | number, status: string | number, response: string, userId: string | number) {
+    return this.coreService.putRequest(AppConstants.API_URL + "leaves/", { leaveId, status, response, userId });
+  }
 
-    addInstituteHoliday(date: string){
-        return this.coreService.postRequest(AppConstants.API_URL+"leaves/institute-holiday",{date})
-    }
+  updateLeave(data: any) {
+    return this.coreService.putRequest(AppConstants.API_URL + "leaves/update-leave", data);
+  }
 
-    getInstituteHolidays(){
-        return this.coreService.getRequest(AppConstants.API_URL+"leaves/institute-holidays")
-    }
+  deleteLeave(leaveId: string | number) {
+    return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/" + leaveId);
+  }
 
-    deleteInstituteHoliday(date: string){
-        return this.coreService.deleteRequest(AppConstants.API_URL+"leaves/institute-holiday/"+date)
-    }
+  addInstituteHoliday(date: string) {
+    return this.coreService.postRequest(AppConstants.API_URL + "leaves/institute-holiday", { date });
+  }
 
+  getInstituteHolidays() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/institute-holidays");
+  }
+
+  deleteInstituteHoliday(date: string) {
+    return this.coreService.deleteRequest(AppConstants.API_URL + "leaves/institute-holiday/" + date);
+  }
+
+  rolloverFinancialYear(targetFY?: string) {
+    return this.coreService.postRequest(AppConstants.API_URL + "leaves/financial-year/rollover", { targetFY });
+  }
+
+  getFinancialYearSummary() {
+    return this.coreService.getRequest(AppConstants.API_URL + "leaves/financial-year/summary");
+  }
 }

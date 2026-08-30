@@ -37,7 +37,7 @@ export class SetUsersLeavesCountComponent implements OnInit {
       this.activeLeave = [];
       return;
     }
-    const user = this.users.find(u => u.userId === this.userId);
+    const user = this.users.find(u => String(u.userId) === String(this.userId));
     if (user) {
       this.activeLeave = user.leaves;
     }

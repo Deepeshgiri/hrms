@@ -1,32 +1,66 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <div class="row filter-row">
-        <select class="select" [(ngModel)]="userId" (change)="loadLeaves()">
-            <option value="">Select User</option>
-            <option *ngFor="let r of users" [value]="r.userId">{{r.name}}</option>
-        </select>
-        <button mat-raised-button [disabled]="!userId" (click)="updateLeave()">Update</button>
+<div class="allot-leaves-page">
+  <div class="page-header-title">
+    <div class="header-left-title">
+      <mat-icon>assignment_ind</mat-icon>
+      <span>Employee Annual Leave Quota Allotment</span>
     </div>
-    <div class="content-title">User Leaves</div>
-        <table class="pinnacle-table" >
-            <tr>
-                <th>Month</th>
-                <th>Leaves</th>
-                <th>Alloted</th>
-                <th>Carried</th>
-                <th>Used</th>
-            </tr>
-            <tr *ngFor="let l of activeLeave">
-                <td [innerText]="l.month"></td>
-                <td [innerText]="l.leaves"></td>
-                <td>
-                    <input class="input-sm" [(ngModel)]="l.alloted">
-                </td>
-                <td [innerText]="l.carried"></td>
-                <td [innerText]="l.used"></td>
-            </tr>
-        </table>
-    </div>
+  </div>
+
+  <mat-card class="filter-card" style="margin-bottom: 20px;">
+    <mat-card-content>
+      <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <mat-form-field appearance="outline" style="min-width: 280px; margin-bottom: -1.25em;">
+          <mat-label>Select Employee</mat-label>
+          <mat-select [(ngModel)]="userId" (selectionChange)="loadLeaves()">
+            <mat-option *ngFor="let r of users" [value]="r.userId">
+              {{r.name}} ({{r.employeeId || 'EMP-' + r.userId}})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" [disabled]="!userId || loading" (click)="updateLeave()" style="height: 48px;">
+          <mat-icon>save</mat-icon> Save & Update Allotment
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="table-wrapper" *ngIf="activeLeave && activeLeave.length">
+    <table class="hrms-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Total Available</th>
+          <th>Monthly Allotted</th>
+          <th>Carried Forward</th>
+          <th>Leaves Consumed / Used</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of activeLeave">
+          <td><strong>{{l.month}}</strong></td>
+          <td>
+            <span class="status-badge" style="background: #e0e7ff; color: #4338ca;">
+              {{l.leaves}} Days
+            </span>
+          </td>
+          <td>
+            <input type="number" step="0.5" [(ngModel)]="l.alloted" class="hrms-input" style="max-width: 100px; padding: 6px 10px; font-size: 13px;" />
+          </td>
+          <td>{{l.carried || 0}}</td>
+          <td>
+            <span style="font-weight: 600; color: #ef4444;">{{l.used || 0}}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="no-data" *ngIf="!userId" style="background: #fff; padding: 48px 20px; text-align: center; border-radius: 12px; border: 1px dashed #cbd5e1;">
+    <mat-icon style="font-size: 40px; height: 40px; width: 40px; color: #94a3b8; margin-bottom: 8px;">person_search</mat-icon>
+    <h3 style="margin: 0 0 6px 0; color: #1e293b;">Select an Employee</h3>
+    <p style="margin: 0; color: #64748b; font-size: 14px;">Choose an employee above to view and configure their monthly leave balances.</p>
+  </div>
+</div>
 
 <loading [show]="loading"></loading>

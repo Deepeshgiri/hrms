@@ -1,0 +1,245 @@
+<div class="audit-logs-container">
+  <!-- Top Title & Live Pulse Monitor Bar -->
+  <div class="page-header-title">
+    <div class="header-left-title">
+      <mat-icon style="color: #6366f1;">troubleshoot</mat-icon>
+      <span>Real-Time Audit Logs & System Activity Monitor</span>
+    </div>
+
+    <div class="monitor-controls">
+      <div class="live-pill" [class.paused]="!isLive">
+        <span class="pulse-dot"></span>
+        <span class="live-text">{{ isLive ? 'LIVE FEED (5s)' : 'PAUSED' }}</span>
+      </div>
+
+      <button class="btn btn-outline-sm" (click)="toggleLive()">
+        <mat-icon style="font-size: 16px; height: 16px; width: 16px;">{{ isLive ? 'pause' : 'play_arrow' }}</mat-icon>
+        <span>{{ isLive ? 'Pause Stream' : 'Resume Live' }}</span>
+      </button>
+
+      <button class="btn btn-outline-sm" (click)="loadLogs()">
+        <mat-icon style="font-size: 16px; height: 16px; width: 16px;">refresh</mat-icon>
+        <span>Refresh</span>
+      </button>
+
+      <button class="btn btn-primary" style="padding: 6px 14px; font-size: 13px;" (click)="exportCsv()">
+        <mat-icon style="font-size: 16px; height: 16px; width: 16px;">download</mat-icon>
+        <span>Export CSV</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="stats-grid" style="margin-bottom: 20px;">
+    <div class="stat-card" style="border-left: 4px solid #6366f1;">
+      <div class="stat-icon" style="background: #eef2ff; color: #6366f1;"><mat-icon>receipt_long</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ stats.todayLogs }}</span>
+        <span class="stat-title">Total Changes Today</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="border-left: 4px solid #0ea5e9;">
+      <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;"><mat-icon>manage_accounts</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ stats.userChangesToday }}</span>
+        <span class="stat-title">User & Staff Updates</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="border-left: 4px solid #10b981;">
+      <div class="stat-icon" style="background: #dcfce7; color: #15803d;"><mat-icon>event_available</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ stats.leaveActionsToday }}</span>
+        <span class="stat-title">Leave & Holiday Actions</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+      <div class="stat-icon" style="background: #fef3c7; color: #b45309;"><mat-icon>payments</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ stats.payrollActionsToday }}</span>
+        <span class="stat-title">Payroll & Salary Events</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Filter Bar -->
+  <div class="category-tabs">
+    <button class="cat-tab" [class.active]="selectedCategory === 'ALL'" (click)="setCategory('ALL')">
+      All Events
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'USER'" (click)="setCategory('USER')">
+      👥 User Management
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'LEAVE'" (click)="setCategory('LEAVE')">
+      🌴 Leaves & Approvals
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'PAYROLL'" (click)="setCategory('PAYROLL')">
+      💰 Payroll & Payslips
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'ATTENDANCE'" (click)="setCategory('ATTENDANCE')">
+      ⏱️ Attendance & Punches
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'SCHEDULE'" (click)="setCategory('SCHEDULE')">
+      🗓️ Shift Schedules
+    </button>
+    <button class="cat-tab" [class.active]="selectedCategory === 'HOLIDAY'" (click)="setCategory('HOLIDAY')">
+      🎉 Holidays
+    </button>
+  </div>
+
+  <!-- Search & User Filter Bar -->
+  <div class="filter-controls-card">
+    <div class="search-input-wrapper">
+      <mat-icon style="color: #94a3b8; font-size: 20px;">search</mat-icon>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="applySearchFilter()"
+        placeholder="Filter logs by description, user name, action, or entity ID..."
+        class="search-input"
+      />
+      <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''; applySearchFilter()">&times;</button>
+    </div>
+
+    <div class="dropdown-filters">
+      <select [(ngModel)]="selectedUserId" (change)="loadLogs()" class="hrms-select-mini">
+        <option value="">All Users</option>
+        <option *ngFor="let u of users" [value]="u.userId">{{ u.name }} ({{ u.employeeId || 'EMP-' + u.userId }})</option>
+      </select>
+
+      <input type="date" [(ngModel)]="startDate" (change)="loadLogs()" class="hrms-input-date" placeholder="Start Date" />
+      <span style="color: #94a3b8;">&ndash;</span>
+      <input type="date" [(ngModel)]="endDate" (change)="loadLogs()" class="hrms-input-date" placeholder="End Date" />
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="table-wrapper" *ngIf="filteredLogs && filteredLogs.length > 0; else noLogs">
+    <table class="hrms-table">
+      <thead>
+        <tr>
+          <th style="width: 170px;">Timestamp</th>
+          <th>Initiated By</th>
+          <th>Action Type</th>
+          <th>Activity Details</th>
+          <th>IP Address</th>
+          <th style="text-align: right;">Inspect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of filteredLogs">
+          <!-- Timestamp -->
+          <td>
+            <div style="font-weight: 600; font-size: 13px; color: #1e293b;">
+              {{ log.created_at | date:'mediumTime' }}
+            </div>
+            <div style="font-size: 11.5px; color: #64748b;">
+              {{ log.created_at | date:'mediumDate' }}
+            </div>
+          </td>
+
+          <!-- User Pill -->
+          <td>
+            <div class="user-pill-cell">
+              <div class="user-avatar-mini" [style.background-color]="getAvatarColor(log.userName)">
+                {{ getInitials(log.userName) }}
+              </div>
+              <div class="user-text-info">
+                <span class="user-name-text">{{ log.userName || 'System' }}</span>
+                <span class="user-role-badge">{{ log.userRole || 'User' }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- Action Badge -->
+          <td>
+            <span class="action-tag" [ngClass]="getActionBadgeClass(log.action)">
+              {{ log.action }}
+            </span>
+          </td>
+
+          <!-- Activity Description -->
+          <td>
+            <div class="log-description">
+              {{ log.description }}
+            </div>
+          </td>
+
+          <!-- IP -->
+          <td>
+            <span class="ip-code">{{ log.ipAddress || '127.0.0.1' }}</span>
+          </td>
+
+          <!-- Action -->
+          <td style="text-align: right;">
+            <button mat-icon-button color="primary" (click)="inspectLog(log)" matTooltip="Inspect Payload Diff">
+              <mat-icon style="font-size: 18px;">code</mat-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #noLogs>
+    <div class="no-data" style="background: #ffffff; padding: 60px 20px; text-align: center; border-radius: 12px; border: 1px dashed #cbd5e1; margin-top: 16px;">
+      <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #94a3b8; margin-bottom: 8px;">history_toggle_off</mat-icon>
+      <h3 style="margin: 0 0 6px 0; color: #1e293b;">No Logs Recorded</h3>
+      <p style="margin: 0; color: #64748b; font-size: 14px;">No audit events found matching your search or filters.</p>
+    </div>
+  </ng-template>
+</div>
+
+<!-- ================= Modal: Inspect Payload & Diff ================= -->
+<div class="modal" *ngIf="inspectModal">
+  <div class="dialog" style="max-width: 680px; width: 95%;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <mat-icon style="color: #6366f1;">data_object</mat-icon>
+        <span>Audit Event Inspector &mdash; #{{ selectedLog?.id }}</span>
+      </div>
+      <button class="close" (click)="inspectModal = false">&times;</button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedLog">
+      <div class="inspect-meta-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 8px; margin-bottom: 16px;">
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Action</span>
+          <div style="font-weight: 700; color: #1e293b; font-size: 14px;">{{ selectedLog.action }}</div>
+        </div>
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Entity Type & ID</span>
+          <div style="font-weight: 600; color: #1e293b; font-size: 13.5px;">{{ selectedLog.entityType }} &bull; {{ selectedLog.entityId || 'N/A' }}</div>
+        </div>
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Initiator</span>
+          <div style="font-weight: 600; color: #1e293b; font-size: 13.5px;">{{ selectedLog.userName }} ({{ selectedLog.userRole }})</div>
+        </div>
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Timestamp</span>
+          <div style="font-weight: 600; color: #1e293b; font-size: 13.5px;">{{ selectedLog.created_at | date:'medium' }}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 4px;">Human Summary</span>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; font-size: 13.5px; color: #334155;">
+          {{ selectedLog.description }}
+        </div>
+      </div>
+
+      <div>
+        <span style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 4px;">JSON Payload & Context Data</span>
+        <pre class="json-code-block">{{ getJsonString(selectedLog.details) }}</pre>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="btn btn-primary" (click)="inspectModal = false">Close Inspector</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<loading [show]="loading"></loading>

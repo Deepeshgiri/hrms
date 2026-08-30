@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CoreService } from '../../../service/core.service';
+import { SharedAuthService } from '../../../service/shared-auth.service';
 import { AppConstants } from '../../../AppConstants';
 
 @Component({
@@ -17,7 +18,10 @@ export class PayrollHomeComponent implements OnInit {
     totalPayroll: 0
   };
 
-  constructor(private coreService: CoreService) {}
+  constructor(
+    private coreService: CoreService,
+    public auth: SharedAuthService
+  ) {}
 
   ngOnInit(): void {
     this.loadPayrollStats();

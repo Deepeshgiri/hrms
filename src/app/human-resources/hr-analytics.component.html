@@ -1,7 +1,7 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
- 
+<div class="analytics-page-container">
+  <div class="page-header-title">
+    <span>📊 Workforce Analytics & Trends</span>
+  </div>
 
   <!-- Key Metrics Cards -->
   <div class="metrics-grid">
@@ -12,7 +12,7 @@
         </div>
         <div class="metric-info">
           <div class="metric-value">{{dashboardStats.totalEmployees}}</div>
-          <div class="metric-label">Total Employees</div>
+          <div class="metric-label">Total Staff</div>
         </div>
       </mat-card-content>
     </mat-card>
@@ -69,7 +69,7 @@
   </div>
 
   <!-- Filters -->
-  <mat-card class="filter-card">
+  <mat-card class="filter-card" style="margin-bottom: 20px;">
     <mat-card-content>
       <div class="filter-row">
         <mat-form-field appearance="outline">
@@ -122,11 +122,8 @@
         </div>
       </mat-card-content>
     </mat-card>
-
-
-   
   </div>
-
+</div>
   
 <div class="loading-overlay" *ngIf="loading">
   <mat-spinner></mat-spinner>

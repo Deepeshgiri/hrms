@@ -10,18 +10,15 @@ import { DialogService } from '../../../service/dialog.service';
   styleUrls: ['./set-timings.component.css']
 })
 export class SetTimingsComponent implements OnInit {
-
   loading: boolean = false;
+  saving: boolean = false;
 
   users: any[] = [];
   timings: any[] = [];
-  timeSlots: string[] = [];
+  selectedUserId: any = null;
+  selectedUserName: string = '';
 
-  timingForm = {
-    userId: null,
-    fromTime: null,
-    toTime: null
-  };
+  schedule: any[] = [];
 
   constructor(
     private coreService: CoreService,
@@ -29,95 +26,83 @@ export class SetTimingsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.setTimeSlots();
     this.getUsers();
     this.getTimings();
   }
 
-  // ---------------- USERS ----------------
   getUsers() {
     this.loading = true;
-
-    this.coreService.getRequest(AppConstants.API_URL + "users")
-      .subscribe((users: any) => {
-        this.users = users;
+    this.coreService.getRequest(AppConstants.API_URL + "users").subscribe({
+      next: (users: any) => {
+        this.users = users || [];
         this.loading = false;
-      }, () => {
+      },
+      error: () => {
         this.loading = false;
-      });
-  }
-
-  // ---------------- TIMINGS ----------------
-  getTimings() {
-    this.loading = true;
-
-    this.coreService.getRequest(AppConstants.API_URL + "users/timings")
-      .subscribe((result: any) => {
-        this.timings = result;
-        this.loading = false;
-      }, () => {
-        this.loading = false;
-      });
-  }
-
-  // ---------------- AUTO FILL ----------------
-  populateTimings() {
-    const userId = this.timingForm.userId;
-
-    const userTimings = this.timings.find(t => t.userId == userId);
-
-    if (userTimings) {
-      this.timingForm.fromTime = userTimings.fromTime?.slice(0, 5);
-      this.timingForm.toTime = userTimings.toTime?.slice(0, 5);
-    } else {
-      this.timingForm.fromTime = null;
-      this.timingForm.toTime = null;
-    }
-  }
-
-  // ---------------- TIME SLOTS ----------------
-  setTimeSlots() {
-    this.timeSlots = [];
-
-    for (let i = 8; i <= 23; i++) {
-      for (let j = 0; j <= 45; j += 15) {
-        const hour = (i + "").padStart(2, "0");
-        const minute = (j + "").padStart(2, "0");
-        this.timeSlots.push(`${hour}:${minute}`);
       }
-    }
-  }
-
-  // ---------------- SUBMIT ----------------
-  submitTimings() {
-
-    if (!this.timingForm.userId || !this.timingForm.fromTime || !this.timingForm.toTime) {
-      this.dialog.showDialog({ content: "Please fill all fields" });
-      return;
-    }
-
-    if (this.timingForm.fromTime >= this.timingForm.toTime) {
-      this.dialog.showDialog({ content: "From Time must be less than To Time" });
-      return;
-    }
-
-    this.loading = true;
-
-    this.coreService.putRequest(
-      AppConstants.API_URL + "users/timings",
-      this.timingForm
-    ).subscribe((data: any) => {
-
-      this.loading = false;
-
-      this.dialog.showDialog({ content: data.message });
-
-      // Refresh list
-      this.getTimings();
-
-    }, () => {
-      this.loading = false;
     });
   }
 
+  getTimings() {
+    this.coreService.getRequest(AppConstants.API_URL + "users/timings").subscribe({
+      next: (result: any) => {
+        this.timings = result || [];
+      },
+      error: () => {}
+    });
+  }
+
+  onUserSelect(userId: any) {
+    if (!userId) {
+      this.selectedUserId = null;
+      this.selectedUserName = '';
+      this.schedule = [];
+      return;
+    }
+    this.selectedUserId = userId;
+    const user = this.users.find(u => u.userId == userId || u.id == userId);
+    this.selectedUserName = user ? user.name : '';
+    this.loadUserSchedule(userId);
+  }
+
+  loadUserSchedule(userId: any) {
+    this.loading = true;
+    this.coreService.getRequest(`${AppConstants.API_URL}users/${userId}/schedule`).subscribe({
+      next: (data: any[]) => {
+        this.schedule = data || [];
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+      }
+    });
+  }
+
+  saveSchedule() {
+    if (!this.selectedUserId) return;
+    this.saving = true;
+    this.coreService.putRequest(`${AppConstants.API_URL}users/${this.selectedUserId}/schedule`, {
+      schedule: this.schedule
+    }).subscribe({
+      next: () => {
+        this.saving = false;
+        this.dialog.showDialog({ content: `Custom weekly schedule saved for ${this.selectedUserName}!` });
+        this.getTimings();
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.dialog.showDialog({ content: err.error?.message || 'Failed to save schedule' });
+      }
+    });
+  }
+
+  applyAllWeekdays(fromTime: string, toTime: string) {
+    this.schedule.forEach(s => {
+      if (s.dayOfWeek !== 'Sunday') {
+        s.fromTime = fromTime;
+        s.toTime = toTime;
+        s.isWorkingDay = true;
+      }
+    });
+  }
 }

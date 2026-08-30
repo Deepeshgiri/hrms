@@ -33,7 +33,7 @@ export class AllotLeavesComponent implements OnInit {
     if (this.userId == "") {
       return this.activeLeave = []
     }
-    let user = this.users.find(u => u.userId == this.userId)
+    let user = this.users.find(u => String(u.userId) == String(this.userId))
     this.activeLeave = user.leaves
   }
   

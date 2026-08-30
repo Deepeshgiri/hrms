@@ -1,38 +1,64 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <div class="content-title">Set Institute Holiday</div>
-    <div class="content-box">
-        <div class="row">
-            <div class="col-sm-3">
-                <mat-form-field>
-                    <input [(ngModel)]="date" matInput [matDatepicker]="picker" placeholder="Date"
-                        required>
-                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
-                </mat-form-field>
-            </div>
-            <div class="col-sm-3">
-                <button mat-raised-button color="primary" (click)="submit()" >Submit</button>
-            </div>
-        </div>
+<div class="institute-holidays-container">
+  <div class="page-header-title">
+    <div class="header-left-title">
+      <mat-icon>event_available</mat-icon>
+      <span>{{ auth.isEmployee() ? 'My Holiday & Off-Days Calendar' : 'Company & Institutional Holidays' }}</span>
     </div>
+  </div>
 
-    <div class="content-title">Active Holidays</div>
-    <table class="pinnacle-table">
+  <!-- Add Holiday Form (Admin / HR only) -->
+  <mat-card class="content-box" *ngIf="auth.isAdminOrHR()" style="margin-bottom: 24px; padding: 16px;">
+    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+      <mat-form-field appearance="outline" style="min-width: 260px; margin-bottom: -1.25em;">
+        <mat-label>Select Company Holiday Date</mat-label>
+        <input [(ngModel)]="date" matInput [matDatepicker]="picker" placeholder="Choose date" required />
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" [disabled]="!date || loading" (click)="submit()" style="height: 48px;">
+        <mat-icon>add</mat-icon> Add Company Holiday
+      </button>
+    </div>
+  </mat-card>
+
+  <!-- Holidays Table -->
+  <div class="table-wrapper" *ngIf="holidays && holidays.length; else noHolidays">
+    <table class="hrms-table">
+      <thead>
         <tr>
-            <th>Date</th>
-            <th>Action</th>
+          <th>Holiday Date</th>
+          <th>Description / Title</th>
+          <th>Holiday Type</th>
+          <th *ngIf="auth.isAdminOrHR()" style="text-align: right;">Action</th>
         </tr>
-        <tr *ngFor="let date of holidays;let i=index">
-            <td [innerText]="date.leaveDate"></td>
-            <td>
-                <button mat-mini-fab color="warn" (click)="deleteHoliday(date.leaveDate,i)">
-                    <mat-icon>delete</mat-icon>
-                </button>
-            </td>
+      </thead>
+      <tbody>
+        <tr *ngFor="let h of holidays; let i = index">
+          <td><strong>{{ h.leaveDate | date:'fullDate' }}</strong></td>
+          <td>{{ h.title || 'Official Holiday' }}</td>
+          <td>
+            <span class="status-badge" [style.background]="h.type === 'Personal' ? '#e0e7ff' : '#dcfce7'" [style.color]="h.type === 'Personal' ? '#4338ca' : '#15803d'">
+              {{ h.type === 'Personal' ? 'Personal Holiday' : 'Company Holiday' }}
+            </span>
+          </td>
+          <td *ngIf="auth.isAdminOrHR()" style="text-align: right;">
+            <button *ngIf="h.type === 'Company'" mat-icon-button color="warn" (click)="deleteHoliday(h.leaveDate, i)" matTooltip="Remove company holiday">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
         </tr>
+      </tbody>
     </table>
+  </div>
 
+  <ng-template #noHolidays>
+    <div class="no-data" style="background: #fff; padding: 48px 20px; text-align: center; border-radius: 12px; border: 1px dashed #cbd5e1;">
+      <mat-icon style="font-size: 40px; height: 40px; width: 40px; color: #94a3b8; margin-bottom: 8px;">event_busy</mat-icon>
+      <h3 style="margin: 0 0 6px 0; color: #1e293b;">No Holidays Configured</h3>
+      <p style="margin: 0; color: #64748b; font-size: 14px;">No upcoming company or personal holidays were found.</p>
+    </div>
+  </ng-template>
 </div>
+
 <loading [show]="loading"></loading>

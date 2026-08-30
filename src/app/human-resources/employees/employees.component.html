@@ -1,0 +1,431 @@
+<div class="employees-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-text">
+      <h2>Staff & Employee Directory</h2>
+      <p>Manage employee records, roles, work timings, individual schedules, and policies</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <mat-icon>person_add</mat-icon>
+        <span>Add Employee</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters and Controls Bar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery" 
+        (ngModelChange)="applyFilters()" 
+        placeholder="Search by name, ID, email, designation..." 
+      />
+      <button *ngIf="searchQuery" class="clear-search" (click)="searchQuery=''; applyFilters()">&times;</button>
+    </div>
+
+    <div class="select-filters">
+      <div class="filter-group">
+        <label>Department:</label>
+        <select [(ngModel)]="selectedDepartment" (ngModelChange)="applyFilters()" class="filter-select">
+          <option value="">All Departments</option>
+          <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Role:</label>
+        <select [(ngModel)]="selectedRole" (ngModelChange)="applyFilters()" class="filter-select">
+          <option value="">All Roles</option>
+          <option *ngFor="let r of roles" [value]="r.id">{{ r.roleName }}</option>
+        </select>
+      </div>
+
+      <!-- View toggle -->
+      <div class="view-toggle">
+        <button [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" matTooltip="Grid View">
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" matTooltip="Table View">
+          <mat-icon>view_list</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employees Count Badge -->
+  <div class="results-info">
+    <span>Showing <strong>{{ filteredEmployees.length }}</strong> of {{ employees.length }} employees</span>
+  </div>
+
+  <!-- Grid View -->
+  <div *ngIf="viewMode === 'grid' && filteredEmployees.length > 0" class="employee-grid">
+    <div class="employee-card" *ngFor="let emp of filteredEmployees">
+      <div class="card-top">
+        <div class="avatar" [style.background-color]="getAvatarColor(emp.name)">
+          {{ getInitials(emp.name) }}
+        </div>
+        <div class="badge-role" [ngClass]="emp.roleName?.toLowerCase() || 'employee'">
+          {{ emp.roleName || 'Employee' }}
+        </div>
+      </div>
+
+      <div class="card-body">
+        <h3 class="emp-name" (click)="viewProfile(emp)">{{ emp.name }}</h3>
+        <div class="emp-designation">{{ emp.designation || 'Staff' }}</div>
+        <div class="emp-dept">🏢 {{ emp.department || 'General' }}</div>
+        
+        <div class="emp-meta">
+          <div class="meta-item">
+            <span class="meta-label">ID:</span>
+            <span class="meta-value">{{ emp.employeeId }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Hours:</span>
+            <span class="meta-value">{{ (emp.fromTime || '09:00').slice(0, 5) }} - {{ (emp.toTime || '18:00').slice(0, 5) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <button class="card-action-btn view-btn" (click)="viewProfile(emp)" matTooltip="View Profile">
+          <mat-icon>visibility</mat-icon>
+          <span>Profile</span>
+        </button>
+        <button class="card-action-btn edit-btn" style="background:#eef2ff; color:#4f46e5;" (click)="openCustomizationModal(emp)" matTooltip="Custom Schedule & Policy">
+          <mat-icon>settings_suggest</mat-icon>
+        </button>
+        <button class="card-action-btn edit-btn" (click)="openEditModal(emp)" matTooltip="Edit Employee">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button *ngIf="emp.userId !== 1" class="card-action-btn delete-btn" (click)="confirmDelete(emp)" matTooltip="Delete Employee">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table View -->
+  <div *ngIf="viewMode === 'table' && filteredEmployees.length > 0" class="table-wrapper">
+    <table class="hrms-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Employee ID</th>
+          <th>Department</th>
+          <th>Designation</th>
+          <th>Role</th>
+          <th>Base Shift</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of filteredEmployees">
+          <td>
+            <div class="table-emp-cell" (click)="viewProfile(emp)">
+              <div class="mini-avatar" [style.background-color]="getAvatarColor(emp.name)">
+                {{ getInitials(emp.name) }}
+              </div>
+              <div class="name-box">
+                <span class="table-emp-name">{{ emp.name }}</span>
+                <span class="table-emp-email">{{ emp.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td><strong>{{ emp.employeeId }}</strong></td>
+          <td>{{ emp.department || 'General' }}</td>
+          <td>{{ emp.designation || 'Staff' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="emp.roleName?.toLowerCase() || 'employee'">
+              {{ emp.roleName || 'Employee' }}
+            </span>
+          </td>
+          <td>{{ (emp.fromTime || '09:00').slice(0, 5) }} - {{ (emp.toTime || '18:00').slice(0, 5) }}</td>
+          <td style="text-align: right;">
+            <button mat-icon-button color="primary" (click)="viewProfile(emp)" matTooltip="View Profile">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button style="color: #6366f1;" (click)="openCustomizationModal(emp)" matTooltip="Custom Schedule & Leave Policy">
+              <mat-icon>settings_suggest</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" (click)="openEditModal(emp)" matTooltip="Edit Info">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button *ngIf="emp.userId !== 1" mat-icon-button color="warn" (click)="confirmDelete(emp)" matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && filteredEmployees.length === 0" class="no-data">
+    <p>No employees match your search or filter criteria.</p>
+  </div>
+
+  <loading [show]="loading"></loading>
+</div>
+
+<!-- ================= Modal: Custom Schedule & Policy ================= -->
+<employee-customization-dialog
+  [show]="modals.customization"
+  [employee]="selectedEmployee"
+  (close)="modals.customization = false; loadEmployees()">
+</employee-customization-dialog>
+
+<!-- ================= Modal: Add Employee ================= -->
+<div class="modal" *ngIf="modals.add">
+  <div class="dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <span>Add New Employee</span>
+      <button class="close" (click)="modals.add = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form (ngSubmit)="saveAddEmployee()">
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Full Name *</label>
+            <input type="text" [(ngModel)]="employeeForm.name" name="name" class="hrms-input" placeholder="e.g. Jane Doe" required />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Email Address *</label>
+            <input type="email" [(ngModel)]="employeeForm.email" name="email" class="hrms-input" placeholder="jane@hrms.com" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Employee ID</label>
+            <input type="text" [(ngModel)]="employeeForm.employeeId" name="employeeId" class="hrms-input" placeholder="EMP-1001" />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Initial Password</label>
+            <input type="password" [(ngModel)]="employeeForm.password" name="password" class="hrms-input" placeholder="emp123" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Department</label>
+            <select [(ngModel)]="employeeForm.department" name="department" class="hrms-select">
+              <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Designation</label>
+            <input type="text" [(ngModel)]="employeeForm.designation" name="designation" class="hrms-input" placeholder="e.g. Frontend Engineer" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">System Role</label>
+            <select [(ngModel)]="employeeForm.roleId" name="roleId" class="hrms-select">
+              <option *ngFor="let r of roles" [value]="r.id">{{ r.roleName }}</option>
+            </select>
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Shift Start Time</label>
+            <input type="time" step="1" [(ngModel)]="employeeForm.fromTime" name="fromTime" class="hrms-input" />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Shift End Time</label>
+            <input type="time" step="1" [(ngModel)]="employeeForm.toTime" name="toTime" class="hrms-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Annual Leave Quota</label>
+            <input type="number" step="0.5" [(ngModel)]="employeeForm.annualQuota" name="annualQuota" class="hrms-input" />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Monthly Accrual</label>
+            <input type="number" step="0.25" [(ngModel)]="employeeForm.monthlyAccrual" name="monthlyAccrual" class="hrms-input" />
+          </div>
+        </div>
+
+        <div *ngIf="formError" class="form-error-alert">{{ formError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" (click)="modals.add = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="formSubmitting">
+            {{ formSubmitting ? 'Creating...' : 'Create Employee' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal: Edit Employee ================= -->
+<div class="modal" *ngIf="modals.edit">
+  <div class="dialog" style="max-width: 600px;">
+    <div class="modal-header">
+      <span>Edit Employee Details</span>
+      <button class="close" (click)="modals.edit = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form (ngSubmit)="saveEditEmployee()">
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Full Name *</label>
+            <input type="text" [(ngModel)]="employeeForm.name" name="name" class="hrms-input" required />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Email Address *</label>
+            <input type="email" [(ngModel)]="employeeForm.email" name="email" class="hrms-input" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Employee ID</label>
+            <input type="text" [(ngModel)]="employeeForm.employeeId" name="employeeId" class="hrms-input" />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Reset Password (leave empty to keep current)</label>
+            <input type="password" [(ngModel)]="employeeForm.password" name="password" class="hrms-input" placeholder="New password" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">Department</label>
+            <select [(ngModel)]="employeeForm.department" name="department" class="hrms-select">
+              <option *ngFor="let d of departments" [value]="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Designation</label>
+            <input type="text" [(ngModel)]="employeeForm.designation" name="designation" class="hrms-input" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="hrms-input-group">
+            <label class="hrms-label">System Role</label>
+            <select [(ngModel)]="employeeForm.roleId" name="roleId" class="hrms-select">
+              <option *ngFor="let r of roles" [value]="r.id">{{ r.roleName }}</option>
+            </select>
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Shift Start Time</label>
+            <input type="time" step="1" [(ngModel)]="employeeForm.fromTime" name="fromTime" class="hrms-input" />
+          </div>
+          <div class="hrms-input-group">
+            <label class="hrms-label">Shift End Time</label>
+            <input type="time" step="1" [(ngModel)]="employeeForm.toTime" name="toTime" class="hrms-input" />
+          </div>
+        </div>
+
+        <div *ngIf="formError" class="form-error-alert">{{ formError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" (click)="modals.edit = false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="formSubmitting">
+            {{ formSubmitting ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal: View Employee Profile ================= -->
+<div class="modal" *ngIf="modals.profile">
+  <div class="dialog profile-dialog" style="max-width: 680px;">
+    <div class="modal-header">
+      <span>Employee Profile Details</span>
+      <button class="close" (click)="modals.profile = false">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="employeeProfileData">
+      <!-- Profile Header -->
+      <div class="profile-hero">
+        <div class="profile-avatar" [style.background-color]="getAvatarColor(employeeProfileData.name)">
+          {{ getInitials(employeeProfileData.name) }}
+        </div>
+        <div class="profile-meta">
+          <h2>{{ employeeProfileData.name }}</h2>
+          <div class="p-designation">{{ employeeProfileData.designation }} &bull; {{ employeeProfileData.department }}</div>
+          <div class="p-badges">
+            <span class="status-badge" [ngClass]="employeeProfileData.roleName?.toLowerCase() || 'employee'">
+              {{ employeeProfileData.roleName || 'Employee' }}
+            </span>
+            <span class="id-badge">ID: {{ employeeProfileData.employeeId }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick KPI Strip -->
+      <div class="profile-stats">
+        <div class="p-stat-card">
+          <div class="p-stat-value">{{ employeeProfileData.totalLeaves }}</div>
+          <div class="p-stat-label">Annual Leave Quota</div>
+        </div>
+        <div class="p-stat-card">
+          <div class="p-stat-value">{{ (employeeProfileData.fromTime || '09:00').slice(0, 5) }} - {{ (employeeProfileData.toTime || '18:00').slice(0, 5) }}</div>
+          <div class="p-stat-label">Shift Hours</div>
+        </div>
+        <div class="p-stat-card">
+          <div class="p-stat-value">&#8377;{{ employeeProfileData.salaryStructure ? (employeeProfileData.salaryStructure.basicSalary | number) : 'Not Configured' }}</div>
+          <div class="p-stat-label">Base Salary</div>
+        </div>
+      </div>
+
+      <!-- Contact & Info -->
+      <div class="profile-section">
+        <h4>Contact & Details</h4>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-k">Email Address:</span>
+            <span class="info-v">{{ employeeProfileData.email }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-k">Department:</span>
+            <span class="info-v">{{ employeeProfileData.department }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-k">Joined Date:</span>
+            <span class="info-v">{{ (employeeProfileData.created_at | date:'mediumDate') || 'Active' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Punches -->
+      <div class="profile-section" *ngIf="employeeProfileData.recentPunches && employeeProfileData.recentPunches.length > 0">
+        <h4>Recent Attendance Activity</h4>
+        <div class="recent-punches-list">
+          <div class="punch-log-item" *ngFor="let p of employeeProfileData.recentPunches">
+            <span class="punch-badge" [class.in]="p.status?.toLowerCase().includes('in')">{{ p.status || 'Punch' }}</span>
+            <span class="punch-time">{{ p.datetime | date:'MMM d, y, h:mm a' }}</span>
+            <span class="punch-type">({{ p.entryType || 'machine' }})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Modal: Delete Confirmation ================= -->
+<div class="modal" *ngIf="modals.delete">
+  <div class="dialog" style="max-width: 440px;">
+    <div class="modal-header">
+      <span>Confirm Deletion</span>
+      <button class="close" (click)="modals.delete = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom: 20px; color: #475569; font-size: 14px;">
+        Are you sure you want to remove <strong>{{ selectedEmployee?.name }}</strong> ({{ selectedEmployee?.employeeId }})? This will permanently delete their account and associated data.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" (click)="modals.delete = false">Cancel</button>
+        <button class="btn btn-danger" (click)="executeDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+</div>

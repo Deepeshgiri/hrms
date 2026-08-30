@@ -1,0 +1,426 @@
+<div class="whatsapp-layout">
+  <!-- ================= LEFT SIDEBAR (CHATS & CALLS LIST) ================= -->
+  <div class="chat-sidebar">
+    <!-- Top Header -->
+    <div class="sidebar-top">
+      <div class="current-user-info">
+        <div class="user-avatar" [style.background-color]="getAvatarColor(auth.getUserName())">
+          {{ getInitials(auth.getUserName()) }}
+        </div>
+        <div class="user-meta">
+          <span class="user-title">{{ auth.getUserName() }}</span>
+          <span class="online-indicator"><span class="dot"></span> Online</span>
+        </div>
+      </div>
+
+      <div class="sidebar-actions">
+        <!-- New Chat Button -->
+        <button class="action-icon-btn" (click)="showNewChatModal = true" title="New 1-to-1 Chat">
+          <mat-icon>chat</mat-icon>
+        </button>
+
+        <!-- New Group Button -->
+        <button class="action-icon-btn" (click)="showNewGroupModal = true" title="New Group Chat">
+          <mat-icon>group_add</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs (Chats / Calls) -->
+    <div class="tab-switcher">
+      <button class="tab-btn" [class.active]="activeTab === 'chats'" (click)="activeTab = 'chats'">
+        <mat-icon style="font-size: 18px;">forum</mat-icon>
+        <span>Chats</span>
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'calls'" (click)="activeTab = 'calls'">
+        <mat-icon style="font-size: 18px;">call</mat-icon>
+        <span>Calls ({{ callHistory.length }})</span>
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-box">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="filterConversations()"
+        placeholder="Search chats or start new conversation..."
+        class="search-field"
+      />
+    </div>
+
+    <!-- Conversations List -->
+    <div class="conversations-scroll" *ngIf="activeTab === 'chats'">
+      <div
+        *ngFor="let conv of filteredConversations"
+        class="conv-card"
+        [class.active]="activeConversation?.id === conv.id"
+        (click)="selectConversation(conv)"
+      >
+        <!-- Avatar with Presence Dot -->
+        <div class="conv-avatar-wrapper">
+          <div class="conv-avatar" [style.background-color]="getAvatarColor(conv.name)">
+            <mat-icon *ngIf="conv.type === 'group'" style="font-size: 20px; color: white;">group</mat-icon>
+            <span *ngIf="conv.type !== 'group'">{{ getInitials(conv.name) }}</span>
+          </div>
+          <span class="presence-badge" *ngIf="conv.type === 'direct' && conv.partner?.isOnline"></span>
+        </div>
+
+        <!-- Chat Details -->
+        <div class="conv-content">
+          <div class="conv-header">
+            <span class="conv-name">{{ conv.name }}</span>
+            <span class="conv-time">{{ conv.lastMessageAt | date:'shortTime' }}</span>
+          </div>
+
+          <div class="conv-preview-row">
+            <span class="conv-snippet" [class.typing-text]="isPartnerTyping && activeConversation?.id === conv.id">
+              {{ isPartnerTyping && activeConversation?.id === conv.id ? 'typing...' : (conv.lastMessageText || 'No messages yet') }}
+            </span>
+            <span class="unread-pill" *ngIf="conv.unreadCount > 0">{{ conv.unreadCount }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-list" *ngIf="filteredConversations.length === 0">
+        <mat-icon style="color: #94a3b8; font-size: 40px; height: 40px; width: 40px;">chat_bubble_outline</mat-icon>
+        <p>No conversations found</p>
+        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px;" (click)="showNewChatModal = true">
+          Start a Chat
+        </button>
+      </div>
+    </div>
+
+    <!-- Calls History Tab -->
+    <div class="conversations-scroll" *ngIf="activeTab === 'calls'">
+      <div *ngFor="let call of callHistory" class="call-history-card">
+        <div class="conv-avatar" [style.background-color]="getAvatarColor(call.partnerName)">
+          <mat-icon style="font-size: 20px; color: white;">{{ call.callType === 'video' ? 'videocam' : 'call' }}</mat-icon>
+        </div>
+
+        <div class="conv-content">
+          <div class="conv-header">
+            <span class="conv-name">{{ call.partnerName }}</span>
+            <span class="conv-time">{{ call.created_at | date:'shortDate' }}</span>
+          </div>
+
+          <div class="conv-preview-row">
+            <span class="call-status-snippet">
+              <mat-icon style="font-size: 14px; vertical-align: middle;" [style.color]="call.status === 'missed' ? '#ef4444' : '#10b981'">
+                {{ call.isOutgoing ? 'call_made' : (call.status === 'missed' ? 'call_missed' : 'call_received') }}
+              </mat-icon>
+              {{ call.status === 'missed' ? 'Missed Call' : (call.duration > 0 ? (formatVoiceTime(call.duration) + ' duration') : call.status) }}
+            </span>
+
+            <button class="call-quick-btn" (click)="callFromHistory(call, call.callType)" title="Call back">
+              <mat-icon style="font-size: 18px; color: #4f46e5;">{{ call.callType === 'video' ? 'videocam' : 'call' }}</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-list" *ngIf="callHistory.length === 0">
+        <mat-icon style="color: #94a3b8; font-size: 40px; height: 40px; width: 40px;">phone_disabled</mat-icon>
+        <p>No call history yet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RIGHT MAIN CHAT AREA ================= -->
+  <div class="chat-main">
+    <ng-container *ngIf="activeConversation; else noChatSelected">
+      <!-- Active Chat Header -->
+      <div class="chat-header">
+        <div class="partner-meta">
+          <div class="conv-avatar" [style.background-color]="getAvatarColor(activeConversation.name)">
+            <mat-icon *ngIf="activeConversation.type === 'group'" style="font-size: 22px; color: white;">group</mat-icon>
+            <span *ngIf="activeConversation.type !== 'group'">{{ getInitials(activeConversation.name) }}</span>
+          </div>
+          <div>
+            <h3 class="partner-name">{{ activeConversation.name }}</h3>
+            <span class="partner-status">
+              <ng-container *ngIf="isPartnerTyping">
+                <span style="color: #10b981; font-weight: 600;">typing...</span>
+              </ng-container>
+              <ng-container *ngIf="!isPartnerTyping">
+                {{ activeConversation.type === 'group' ? (activeConversation.participants?.length + ' members') : (activeConversation.partner?.isOnline ? 'online' : 'offline') }}
+              </ng-container>
+            </span>
+          </div>
+        </div>
+
+        <!-- Calling Action Buttons (WhatsApp Style) -->
+        <div class="header-calling-actions">
+          <button class="call-action-btn" (click)="startCall('audio')" title="Start Voice Call">
+            <mat-icon>call</mat-icon>
+          </button>
+          <button class="call-action-btn" (click)="startCall('video')" title="Start Video Call">
+            <mat-icon>videocam</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="messages-stream" #messagesContainer>
+        <div class="doodle-pattern"></div>
+
+        <div *ngFor="let msg of messages" class="msg-row" [class.outgoing]="msg.senderId === auth.getUserId()">
+          <div class="msg-bubble" [class.msg-deleted]="msg.isDeleted">
+            <!-- Group Sender Name -->
+            <div class="group-sender" *ngIf="activeConversation.type === 'group' && msg.senderId !== auth.getUserId()">
+              {{ msg.senderName }}
+            </div>
+
+            <!-- Replying Quote Preview -->
+            <div class="reply-quote-box" *ngIf="msg.replyToId">
+              <div class="reply-author">{{ msg.replySenderName || 'Reply' }}</div>
+              <div class="reply-text-snippet">{{ msg.replyContent }}</div>
+            </div>
+
+            <!-- Text Content -->
+            <div class="msg-text" *ngIf="msg.content && msg.messageType !== 'voice'">
+              {{ msg.content }}
+            </div>
+
+            <!-- Attachments (Images, Videos, Documents) -->
+            <div class="msg-attachments" *ngIf="msg.attachments && msg.attachments.length > 0">
+              <div *ngFor="let att of msg.attachments" class="attachment-item">
+                <!-- Image Lightbox -->
+                <img
+                  *ngIf="att.fileType === 'image'"
+                  [src]="att.fileUrl"
+                  class="attachment-img"
+                  (click)="activeMedia = att; showMediaViewer = true"
+                  alt="Chat attachment"
+                />
+
+                <!-- Video -->
+                <video *ngIf="att.fileType === 'video'" [src]="att.fileUrl" controls class="attachment-video"></video>
+
+                <!-- Document Download Card -->
+                <a *ngIf="att.fileType === 'document' || att.fileType === 'file'" [href]="att.fileUrl" target="_blank" class="document-card">
+                  <mat-icon style="color: #4f46e5;">insert_drive_file</mat-icon>
+                  <div class="doc-info">
+                    <span class="doc-title">{{ att.fileName }}</span>
+                    <span class="doc-size">{{ (att.fileSize / 1024).toFixed(1) }} KB</span>
+                  </div>
+                  <mat-icon style="color: #64748b;">download</mat-icon>
+                </a>
+
+                <!-- Voice Note Player -->
+                <div *ngIf="att.fileType === 'voice' || msg.messageType === 'voice'" class="voice-player">
+                  <audio [src]="att.fileUrl" controls class="voice-audio-element"></audio>
+                </div>
+              </div>
+            </div>
+
+            <!-- Emoji Reactions Badge -->
+            <div class="reactions-strip" *ngIf="msg.reactions && msg.reactions.length > 0">
+              <span *ngFor="let r of msg.reactions" class="reaction-tag" (click)="toggleReaction(msg, r.emoji)">
+                {{ r.emoji }}
+              </span>
+            </div>
+
+            <!-- Footer: Timestamp & Checkmarks -->
+            <div class="msg-footer">
+              <span class="msg-timestamp">{{ msg.created_at | date:'shortTime' }}</span>
+              <span *ngIf="msg.isEdited" class="msg-edited-tag">edited</span>
+
+              <!-- WhatsApp Checkmarks -->
+              <span class="msg-status-ticks" *ngIf="msg.senderId === auth.getUserId()">
+                <mat-icon *ngIf="msg.status === 'sent'" style="font-size: 14px; color: #94a3b8;">check</mat-icon>
+                <mat-icon *ngIf="msg.status === 'delivered'" style="font-size: 14px; color: #94a3b8;">done_all</mat-icon>
+                <mat-icon *ngIf="msg.status === 'read'" style="font-size: 14px; color: #0ea5e9;">done_all</mat-icon>
+              </span>
+            </div>
+
+            <!-- Hover Quick Action Toolbar -->
+            <div class="msg-hover-actions">
+              <!-- Quick Reaction -->
+              <button class="mini-btn" (click)="toggleReaction(msg, '👍')">👍</button>
+              <button class="mini-btn" (click)="toggleReaction(msg, '❤️')">❤️</button>
+              <button class="mini-btn" (click)="replyMessage(msg)" title="Reply">
+                <mat-icon style="font-size: 14px;">reply</mat-icon>
+              </button>
+              <button class="mini-btn" *ngIf="msg.senderId === auth.getUserId() && !msg.isDeleted" (click)="editMessage(msg)" title="Edit">
+                <mat-icon style="font-size: 14px;">edit</mat-icon>
+              </button>
+              <button class="mini-btn" *ngIf="msg.senderId === auth.getUserId() && !msg.isDeleted" (click)="deleteMessage(msg)" title="Delete">
+                <mat-icon style="font-size: 14px; color: #ef4444;">delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Replying Banner Above Input -->
+      <div class="replying-banner" *ngIf="replyingTo">
+        <div class="reply-info">
+          <span style="font-size: 12px; font-weight: 700; color: #4f46e5;">Replying to {{ replyingTo.senderName }}</span>
+          <span style="font-size: 12px; color: #475569;">{{ replyingTo.content }}</span>
+        </div>
+        <button class="close-reply-btn" (click)="replyingTo = null">&times;</button>
+      </div>
+
+      <!-- Input Toolbar -->
+      <div class="chat-input-bar">
+        <!-- Emoji Picker Trigger -->
+        <div class="emoji-picker-container">
+          <button class="input-tool-btn" (click)="showEmojiPicker = !showEmojiPicker" title="Emoji">
+            <mat-icon>sentiment_satisfied_alt</mat-icon>
+          </button>
+          <div class="emoji-popover" *ngIf="showEmojiPicker">
+            <span *ngFor="let e of EMOJIS" class="emoji-opt" (click)="newMessageText = newMessageText + e; showEmojiPicker = false">
+              {{ e }}
+            </span>
+          </div>
+        </div>
+
+        <!-- File Upload Trigger -->
+        <label class="input-tool-btn" title="Attach file">
+          <mat-icon>attach_file</mat-icon>
+          <input type="file" (change)="onFileUpload($event)" style="display: none;" />
+        </label>
+
+        <!-- Live Voice Recording Mode -->
+        <div class="voice-recording-strip" *ngIf="isRecordingVoice">
+          <span class="recording-pulse"></span>
+          <span class="recording-timer">Recording: {{ formatVoiceTime(recordingSeconds) }}</span>
+          <button class="btn-cancel-voice" (click)="cancelVoiceRecording()">Cancel</button>
+          <button class="btn-send-voice" (click)="stopAndSendVoiceNote()">
+            <mat-icon style="font-size: 16px;">send</mat-icon> Send Voice
+          </button>
+        </div>
+
+        <!-- Normal Text Input -->
+        <textarea
+          *ngIf="!isRecordingVoice"
+          [(ngModel)]="newMessageText"
+          (keydown)="onInputKeydown($event)"
+          placeholder="Type a message..."
+          rows="1"
+          class="chat-textarea"
+        ></textarea>
+
+        <!-- Send / Voice Record Button -->
+        <button
+          *ngIf="newMessageText.trim().length > 0 && !isRecordingVoice"
+          class="send-msg-btn"
+          (click)="sendMessage()"
+          title="Send"
+        >
+          <mat-icon>send</mat-icon>
+        </button>
+
+        <button
+          *ngIf="newMessageText.trim().length === 0 && !isRecordingVoice"
+          class="voice-rec-btn"
+          (click)="startVoiceRecording()"
+          title="Record Voice Note"
+        >
+          <mat-icon>mic</mat-icon>
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Splash Screen when no chat is selected -->
+    <ng-template #noChatSelected>
+      <div class="no-chat-splash">
+        <div class="splash-icon">
+          <mat-icon style="font-size: 64px; height: 64px; width: 64px; color: #6366f1;">forum</mat-icon>
+        </div>
+        <h2>HRMS Team Communication & Calling</h2>
+        <p>Send instant messages, make free audio/video calls, and collaborate in real-time with team members.</p>
+        <div class="secure-badge">
+          <mat-icon style="font-size: 14px; vertical-align: middle;">lock</mat-icon> End-to-end peer-to-peer audio & video calls
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</div>
+
+<!-- ================= MODAL: START NEW 1-TO-1 CHAT ================= -->
+<div class="modal" *ngIf="showNewChatModal">
+  <div class="dialog" style="max-width: 480px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <mat-icon style="color: #4f46e5;">chat</mat-icon>
+        <span>Select Team Member</span>
+      </div>
+      <button class="close" (click)="showNewChatModal = false">&times;</button>
+    </div>
+
+    <div class="modal-body" style="max-height: 400px; overflow-y: auto; padding: 12px 16px;">
+      <div *ngFor="let u of users" class="user-select-card" (click)="startDirectChatWithUser(u)">
+        <div class="conv-avatar" [style.background-color]="getAvatarColor(u.name)">
+          {{ getInitials(u.name) }}
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px; color: #1e293b;">{{ u.name }}</div>
+          <div style="font-size: 12px; color: #64748b;">{{ u.designation || 'Staff' }} &bull; {{ u.department || 'General' }}</div>
+        </div>
+        <span class="presence-badge" *ngIf="u.isOnline"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CREATE GROUP CHAT ================= -->
+<div class="modal" *ngIf="showNewGroupModal">
+  <div class="dialog" style="max-width: 520px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <mat-icon style="color: #4f46e5;">group_add</mat-icon>
+        <span>Create New Team Group</span>
+      </div>
+      <button class="close" (click)="showNewGroupModal = false">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 12.5px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Group Name *</label>
+        <input type="text" [(ngModel)]="groupName" placeholder="e.g. Engineering Core, HR Announcements" class="hrms-input" />
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12.5px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Group Description</label>
+        <input type="text" [(ngModel)]="groupDescription" placeholder="Topic or project details" class="hrms-input" />
+      </div>
+
+      <div>
+        <label style="font-size: 12.5px; font-weight: 600; color: #334155; display: block; margin-bottom: 6px;">Select Group Members ({{ selectedGroupMembers.length }} selected)</label>
+        <div style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <div
+            *ngFor="let u of users"
+            class="user-select-card"
+            [class.selected-member]="selectedGroupMembers.includes(u.userId)"
+            (click)="toggleGroupMember(u.userId)"
+          >
+            <div class="conv-avatar" [style.background-color]="getAvatarColor(u.name)">
+              {{ getInitials(u.name) }}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 13.5px; color: #1e293b;">{{ u.name }}</div>
+              <div style="font-size: 11.5px; color: #64748b;">{{ u.designation || 'Staff' }}</div>
+            </div>
+            <mat-icon *ngIf="selectedGroupMembers.includes(u.userId)" style="color: #10b981;">check_circle</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="btn btn-secondary" (click)="showNewGroupModal = false">Cancel</button>
+        <button class="btn btn-primary" [disabled]="!groupName.trim()" (click)="createGroup()">Create Group</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: IMAGE MEDIA VIEWER ================= -->
+<div class="media-lightbox-overlay" *ngIf="showMediaViewer && activeMedia" (click)="showMediaViewer = false">
+  <div class="media-lightbox-content" (click)="$event.stopPropagation()">
+    <img [src]="activeMedia.fileUrl" class="full-media-img" alt="Media full view" />
+    <button class="close-lightbox" (click)="showMediaViewer = false">&times;</button>
+  </div>
+</div>

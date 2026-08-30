@@ -13,15 +13,16 @@ import { AllotLeavesComponent } from './allot-leaves/allot-leaves.component';
 import { CoreService } from '../../service/core.service';
 import { PinnacleCommonModule } from '../../pinnacle-common.module';
 import { MaterialModule } from '../../material.module';
+import { roleGuard } from 'src/app/guards/role.guard';
 
 const routes: Routes = [
     { path: "", component: LeaveHomeComponent },
     { path: "new-leave", component: RequestLeaveComponent },
-    { path: "users-leaves", component: UsersLeavesComponent },
-    { path: "set-users-leaves", component: SetUsersLeavesCountComponent },
+    { path: "users-leaves", component: UsersLeavesComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "set-users-leaves", component: SetUsersLeavesCountComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
     { path: "institute-holidays", component: InstituteHolidaysComponent },
-    { path: "default-users-leaves", component: DefaultUserLeavesComponent },
-    { path: "allot-leaves", component: AllotLeavesComponent },
+    { path: "default-users-leaves", component: DefaultUserLeavesComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "allot-leaves", component: AllotLeavesComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
 ];
 
 @NgModule({

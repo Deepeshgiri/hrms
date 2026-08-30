@@ -53,6 +53,36 @@ export class SharedAuthService {
     return this.userSubject.value;
   }
 
+  getRoleId(): number {
+    const u = this.getUser();
+    return u?.roleId ? Number(u.roleId) : 3;
+  }
+
+  isAdmin(): boolean {
+    return this.getRoleId() === 1;
+  }
+
+  isHR(): boolean {
+    return this.getRoleId() === 2;
+  }
+
+  isFinance(): boolean {
+    return this.getRoleId() === 4;
+  }
+
+  isEmployee(): boolean {
+    return this.getRoleId() === 3;
+  }
+
+  isAdminOrHR(): boolean {
+    const r = this.getRoleId();
+    return r === 1 || r === 2;
+  }
+
+  hasRole(roles: number[]): boolean {
+    return roles.includes(this.getRoleId());
+  }
+
   private getStoredUser(): any {
     const user = localStorage.getItem(this.userKey);
     return user ? JSON.parse(user) : null;
@@ -68,6 +98,20 @@ export class SharedAuthService {
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  isLoggedIn(): boolean {
+    return this.isAuthenticated();
+  }
+
+  getUserId(): number {
+    const u = this.getUser();
+    return u?.id || u?.userId ? Number(u.id || u.userId) : 0;
+  }
+
+  getUserName(): string {
+    const u = this.getUser();
+    return u?.name || u?.email || 'User';
   }
 
   logout(): void {

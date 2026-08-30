@@ -11,14 +11,15 @@ import { CoreService } from '../../service/core.service';
 import { PinnacleCommonModule } from '../../pinnacle-common.module';
 import { MaterialModule } from '../../material.module';
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { roleGuard } from 'src/app/guards/role.guard';
 
 const routes: Routes = [
     { path: "", component: UserAttendanceComponent },
-    { path: "today", component: UserAttendanceTodayComponent },
-    { path: "set-timings", component: SetTimingsComponent },
-    { path: "users-leaves", loadComponent: () => import('./users-leaves/users-leaves.component').then(m => m.UsersLeavesComponent) },
-    { path: "manual", component: ManualAttendanceComponent },
-    { path: "reports", component: HrmsReportsComponent }
+    { path: "today", component: UserAttendanceTodayComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "set-timings", component: SetTimingsComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "users-leaves", loadComponent: () => import('./users-leaves/users-leaves.component').then(m => m.UsersLeavesComponent), canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "manual", component: ManualAttendanceComponent, canActivate: [roleGuard], data: { roles: [1, 2] } },
+    { path: "reports", component: HrmsReportsComponent, canActivate: [roleGuard], data: { roles: [1, 2, 4] } }
 ];
 
 @NgModule({

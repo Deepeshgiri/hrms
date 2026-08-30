@@ -1,7 +1,8 @@
 import express from 'express';
 import { pool } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireFinanceOrAdmin } from '../auth.js';
 import { asyncHandler, MONTH_NAMES } from '../helpers.js';
+import { logAudit } from '../audit.js';
 
 const router = express.Router();
 
@@ -72,6 +73,24 @@ async function computeSalary(userId) {
 router.get(
   '/stats',
   asyncHandler(async (req, res) => {
+    // If Employee, show personal stats
+    if (req.user.roleId === 3) {
+      const [empPayslips] = await pool.query(
+        "SELECT COUNT(*) as processed, COALESCE(SUM(netSalary), 0) as total FROM payslips WHERE userId = ? AND status IN ('Processed','Paid')",
+        [req.user.userId]
+      );
+      const [pendRows] = await pool.query(
+        "SELECT COUNT(*) as pending FROM payslips WHERE userId = ? AND status = 'Draft'",
+        [req.user.userId]
+      );
+      return res.json({
+        totalEmployees: 1,
+        processedPayslips: Number(empPayslips[0].processed) || 0,
+        pendingPayslips: Number(pendRows[0].pending) || 0,
+        totalPayroll: Number(empPayslips[0].total) || 0,
+      });
+    }
+
     const [empRows] = await pool.query('SELECT COUNT(*) as c FROM users');
     const [procRows] = await pool.query("SELECT COUNT(*) as c FROM payslips WHERE status IN ('Processed','Paid')");
     const [pendRows] = await pool.query("SELECT COUNT(*) as c FROM payslips WHERE status = 'Draft'");
@@ -88,9 +107,10 @@ router.get(
   })
 );
 
-// GET /hr/payroll/salary-structures
+// GET /hr/payroll/salary-structures - Admin / HR / Finance only
 router.get(
   '/salary-structures',
+  requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const [rows] = await pool.query('SELECT id FROM salary_structures ORDER BY id');
     const result = [];
@@ -102,9 +122,10 @@ router.get(
   })
 );
 
-// POST /hr/payroll/salary-structure
+// POST /hr/payroll/salary-structure - Admin / HR / Finance only
 router.post(
   '/salary-structure',
+  requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const { userId, basicSalary = 0, hra = 0, da = 0, allowances = [], deductions = [] } = req.body;
 
@@ -153,6 +174,18 @@ router.post(
       }
 
       await conn.commit();
+
+      const [uRows] = await pool.query('SELECT name FROM users WHERE id = ?', [Number(userId)]);
+      const empName = uRows[0]?.name || `User ID ${userId}`;
+
+      logAudit(req, {
+        action: 'SALARY_STRUCTURE_SAVED',
+        entityType: 'PAYROLL',
+        entityId: structureId,
+        description: `Configured salary structure (Base: ₹${Number(basicSalary).toLocaleString('en-IN')}) for ${empName}`,
+        details: { userId, basicSalary, hra, da, allowances, deductions },
+      });
+
       res.json({ success: true, message: 'Salary structure saved successfully' });
     } catch (err) {
       await conn.rollback();
@@ -167,7 +200,13 @@ router.post(
 router.get(
   '/payslips',
   asyncHandler(async (req, res) => {
-    const { month, year, userId } = req.query;
+    const { month, year } = req.query;
+    let targetUserId = req.query.userId;
+
+    // If logged in as an employee (Role 3), strictly force userId to own ID
+    if (req.user.roleId === 3) {
+      targetUserId = req.user.userId;
+    }
 
     let sql = `SELECT p.id, p.userId, p.month, p.year, p.basicSalary, p.grossSalary, p.netSalary,
                       p.status, p.paidDate, u.name as employeeName, u.employeeId
@@ -183,9 +222,9 @@ router.get(
       sql += ' AND p.year = ?';
       params.push(Number(year));
     }
-    if (userId) {
+    if (targetUserId) {
       sql += ' AND p.userId = ?';
-      params.push(Number(userId));
+      params.push(Number(targetUserId));
     }
     sql += ' ORDER BY p.year DESC, p.month DESC, u.name';
 
@@ -194,9 +233,10 @@ router.get(
   })
 );
 
-// POST /hr/payroll/generate-all-payslips
+// POST /hr/payroll/generate-all-payslips - Admin / HR / Finance only
 router.post(
   '/generate-all-payslips',
+  requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const { month, year } = req.body;
     if (!month || !year) {
@@ -224,13 +264,21 @@ router.post(
       generated += 1;
     }
 
+    logAudit(req, {
+      action: 'PAYSLIPS_GENERATED',
+      entityType: 'PAYROLL',
+      description: `Generated ${generated} monthly payslips for ${MONTH_NAMES[month - 1]} ${year}`,
+      details: { month, year, count: generated },
+    });
+
     res.json({ success: true, message: `Generated ${generated} payslip(s) for ${MONTH_NAMES[month - 1]} ${year}` });
   })
 );
 
-// PUT /hr/payroll/payslip/:id/status
+// PUT /hr/payroll/payslip/:id/status - Admin / HR / Finance only
 router.put(
   '/payslip/:id/status',
+  requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const { status, paidDate } = req.body;
@@ -243,19 +291,44 @@ router.put(
       'UPDATE payslips SET status = ?, paidDate = ? WHERE id = ?',
       [status, paidDate || null, id]
     );
+
+    const [pRows] = await pool.query(
+      'SELECT p.month, p.year, u.name as empName FROM payslips p JOIN users u ON u.id = p.userId WHERE p.id = ?',
+      [id]
+    );
+    const pInfo = pRows[0];
+    const desc = pInfo ? `for ${pInfo.empName} (${MONTH_NAMES[pInfo.month - 1]} ${pInfo.year})` : `ID ${id}`;
+
+    logAudit(req, {
+      action: 'PAYSLIP_STATUS_UPDATED',
+      entityType: 'PAYROLL',
+      entityId: id,
+      description: `Marked payslip ${desc} as "${status}"`,
+      details: { payslipId: id, status, paidDate },
+    });
+
     res.json({ success: true, message: `Payslip marked as ${status}` });
   })
 );
 
-// DELETE /hr/payroll/payslip/:id
+// DELETE /hr/payroll/payslip/:id - Admin / HR / Finance only
 router.delete(
   '/payslip/:id',
+  requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const [result] = await pool.query('DELETE FROM payslips WHERE id = ?', [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Payslip not found' });
     }
+
+    logAudit(req, {
+      action: 'PAYSLIP_DELETED',
+      entityType: 'PAYROLL',
+      entityId: id,
+      description: `Deleted payslip record ID: ${id}`,
+    });
+
     res.json({ success: true, message: 'Payslip deleted successfully' });
   })
 );
@@ -276,6 +349,11 @@ router.get(
       return res.status(404).send('Payslip not found');
     }
     const p = rows[0];
+
+    // If Employee, ensure own payslip
+    if (req.user.roleId === 3 && p.userId !== req.user.userId) {
+      return res.status(403).send('Access denied: You can only download your own payslip');
+    }
 
     const [allowances] = await pool.query(
       `SELECT sa.name, sa.amount FROM salary_allowances sa

@@ -1,18 +1,49 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <table class="pinnacle-table big-heading">
+<div class="today-attendance-container">
+  <div class="page-header-title">
+    <span>📋 Today's Live Attendance Roster</span>
+    <button mat-stroked-button (click)="getTodaysAttendance()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="hrms-table">
+      <thead>
         <tr>
-            <th>User Name</th>
-            <th>Entries</th>
+          <th>Employee Name</th>
+          <th>Designation / Dept</th>
+          <th>Shift Hours</th>
+          <th>First In</th>
+          <th>Last Out</th>
+          <th>Punches Today</th>
+          <th>Status</th>
         </tr>
+      </thead>
+      <tbody>
         <tr *ngFor="let a of attendance">
-            <td>{{a.name}}</td>
-            <td>
-                <div *ngFor="let e of a.entries;let i = index" [ngStyle]="{backgroundColor:getEntryColor(e.entry,a.from_to_time,i,a.entries.length),color:'#fff'}"
-                    class='assigned-items'>{{e.entry}}</div>
-            </td>
+          <td><strong>{{ a.name }}</strong></td>
+          <td>{{ a.designation || 'Staff' }} &bull; {{ a.department || 'General' }}</td>
+          <td>{{ (a.from_to_time?.fromTime || '09:00').slice(0, 5) }} - {{ (a.from_to_time?.toTime || '18:00').slice(0, 5) }}</td>
+          <td>{{ a.entries[0]?.entry || '-' }}</td>
+          <td>{{ a.entries.length > 1 ? a.entries[a.entries.length - 1]?.entry : '-' }}</td>
+          <td>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span *ngFor="let e of a.entries; let i = index" 
+                    [ngStyle]="{backgroundColor: getEntryColor(e.entry, a.from_to_time, i, a.entries.length), color: '#fff'}"
+                    style="padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">
+                {{ e.entry }}
+              </span>
+              <span *ngIf="!a.entries?.length" style="color: #94a3b8; font-size: 12px;">No punch yet</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [class.present]="a.entries?.length > 0" [class.absent]="!a.entries?.length">
+              {{ a.entries?.length > 0 ? 'Present' : 'Absent' }}
+            </span>
+          </td>
         </tr>
+      </tbody>
     </table>
+  </div>
 </div>
 <loading [show]="loading"></loading>

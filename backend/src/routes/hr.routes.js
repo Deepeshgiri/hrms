@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../db.js';
-import { authMiddleware } from '../auth.js';
+import { authMiddleware, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, todayStr, pad } from '../helpers.js';
 
 const router = express.Router();
@@ -42,6 +42,25 @@ router.get(
   '/dashboard-stats',
   asyncHandler(async (req, res) => {
     const today = todayStr();
+
+    // If Employee, return personal stats
+    if (req.user.roleId === 3) {
+      const [todayPunches] = await pool.query(
+        'SELECT COUNT(*) as c FROM attendance WHERE userId = ? AND DATE(datetime) = ?',
+        [req.user.userId, today]
+      );
+      const [userLeaves] = await pool.query(
+        "SELECT COUNT(*) as c FROM leaves WHERE userId = ? AND status = 'Pending'",
+        [req.user.userId]
+      );
+      return res.json({
+        totalEmployees: 1,
+        presentToday: Number(todayPunches[0].c) > 0 ? 1 : 0,
+        onLeave: 0,
+        pendingLeaves: Number(userLeaves[0].c) || 0,
+        lateArrivals: 0,
+      });
+    }
 
     const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users');
     const totalEmployees = Number(totalRows[0].c) || 0;
@@ -86,13 +105,13 @@ router.get(
   })
 );
 
-// GET /hr/analytics/attendance?month=1-12&year=YYYY
+// GET /hr/analytics/attendance?month=1-12&year=YYYY - Admin / HR only
 router.get(
   '/analytics/attendance',
+  requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const month = Number(req.query.month) || new Date().getMonth() + 1;
     const year = Number(req.query.year) || new Date().getFullYear();
-    const monthPad = pad(month);
 
     const [users] = await pool.query(
       `SELECT u.id as userId, u.name FROM users u ORDER BY u.name`
@@ -132,9 +151,10 @@ router.get(
   })
 );
 
-// GET /hr/analytics/leaves?year=YYYY
+// GET /hr/analytics/leaves?year=YYYY - Admin / HR only
 router.get(
   '/analytics/leaves',
+  requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const year = Number(req.query.year) || new Date().getFullYear();
 
@@ -162,9 +182,10 @@ router.get(
   })
 );
 
-// GET /hr/analytics/overview
+// GET /hr/analytics/overview - Admin / HR only
 router.get(
   '/analytics/overview',
+  requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users');
     const [pendingRows] = await pool.query("SELECT COUNT(*) as c FROM leaves WHERE status = 'Pending'");
@@ -179,9 +200,10 @@ router.get(
   })
 );
 
-// POST /hr/attendance/manual
+// POST /hr/attendance/manual - Admin / HR only
 router.post(
   '/attendance/manual',
+  requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const { userId, date, checkIn, checkOut, status, remarks } = req.body;
 

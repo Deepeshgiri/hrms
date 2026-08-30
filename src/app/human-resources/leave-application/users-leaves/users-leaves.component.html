@@ -1,76 +1,119 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <!-- <div class="row leave-row">
-        <button mat-raised-button> <mat-icon>add</mat-icon> Leave</button>
-    </div> -->
-    <ng-container *ngIf="leaves && leaves.length">
-        <div class="content-title">Users Leaves</div>
-        <div class="table-wrapper">
-        <table class="pinnacle-table big-heading">
-            <tr>
-                <th>Name</th>
-                <th>Leave</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Reason</th>
-                <th>Date</th>
-                <th>Response</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            <ng-container *ngFor="let leave of leaves">
-                <tr>
-                    <td>{{leave.name}}</td>
-                    <td>
-                        <button (click)="showLeaveContent(leave.leaveContent)" mat-mini-fab>
-                            <mat-icon>visibility</mat-icon>
-                        </button>
-                    </td>
-                    <td>{{leave.fromDate}}</td>
-                    <td>{{leave.toDate}}</td>
-                    <td>{{leave.reason}}</td>
-                    <td>{{leave.timestamp}}</td>
-                    <td>{{leave.response}}</td>
-                    <td>{{leave.status}}</td>
-                    <td>
-                        <!-- <ng-container *ngIf="leave.status!='Accepted'">
-                            <button mat-mini-fab color="primary" (click)="acceptRejectLeave(leave,2)">
-                                <mat-icon>done</mat-icon>
-                            </button>&nbsp;
-                        </ng-container>
-                        <ng-container *ngIf="leave.status!='Rejected'">
-                            <button mat-mini-fab color="warn" (click)="acceptRejectLeave(leave,3)">
-                                <mat-icon>close</mat-icon>
-                            </button>
-                        </ng-container> -->
-                        <button mat-raised-button (click)="modals.responseModal=true;activeLeave=leave">Action</button>
-                    </td>
-                </tr>
-            </ng-container>
-        </table>
-        </div>
+<div class="leave-approvals-page">
+  <div class="page-header-title">
+    <span>📋 Employee Leave Approvals & Requests</span>
+    <button mat-stroked-button (click)="getUsersLeaves()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
 
-    </ng-container>
-    <div class="no-data perfect-centered" *ngIf="leaves &&  !leaves.length">No leaves requested</div>
-</div>
-
-<!--Leave Response Modal-->
-<div class="modal" modal [show]="modals.responseModal" [options]="{width:'500px'}">
-    <div class="dialog">
-        <div class="modal-header">Response</div>
-        <div class='close' (click)="modals.responseModal=false">&times;</div>
-        <div class="modal-body">
-            <mat-form-field>
-                <mat-label>Response</mat-label>
-                <textarea [(ngModel)]="response" #res="ngModel" matInput required></textarea>
-            </mat-form-field>
-            <button style="margin-right: 10px;" *ngIf="activeLeave && activeLeave.status!='Accepted'" mat-raised-button
-                color="primary" [disabled]="res.invalid" (click)="acceptRejectLeave(2,activeLeave.userId)">Accept</button>
-            <button *ngIf="activeLeave && activeLeave.status!='Rejected'" mat-raised-button color="warn"
-                [disabled]="res.invalid" (click)="acceptRejectLeave(3,activeLeave.userId)">Reject</button>
-        </div>
+  <!-- Filters & Search Toolbar -->
+  <div class="filters-bar" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap;">
+    <div class="filter-chips" style="display: flex; gap: 8px;">
+      <button mat-stroked-button [color]="selectedFilter === 'All' ? 'primary' : ''" (click)="setFilter('All')">
+        All ({{ leaves.length }})
+      </button>
+      <button mat-stroked-button [color]="selectedFilter === 'Pending' ? 'warn' : ''" (click)="setFilter('Pending')">
+        ⏳ Pending
+      </button>
+      <button mat-stroked-button [color]="selectedFilter === 'Accepted' ? 'accent' : ''" (click)="setFilter('Accepted')">
+        ✓ Approved
+      </button>
+      <button mat-stroked-button [color]="selectedFilter === 'Rejected' ? 'warn' : ''" (click)="setFilter('Rejected')">
+        ✕ Rejected
+      </button>
     </div>
-</div>
 
-<loading [show]="loading"></loading>
+    <div class="search-input" style="flex: 1; max-width: 320px;">
+      <mat-form-field appearance="outline" style="width: 100%; margin-bottom: -1.25em;">
+        <mat-label>Search by employee or reason</mat-label>
+        <input matInput [(ngModel)]="searchQuery" (input)="applyFilter()" placeholder="Type to filter...">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Leave Requests Data Table -->
+  <div class="table-wrapper" *ngIf="filteredLeaves.length > 0">
+    <table class="hrms-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Leave Type</th>
+          <th>Duration & Dates</th>
+          <th>Reason</th>
+          <th>Applied On</th>
+          <th>Status</th>
+          <th>HR Note / Response</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let leave of filteredLeaves">
+          <td>
+            <strong>{{ leave.name || ('Employee #' + leave.userId) }}</strong>
+          </td>
+          <td>
+            <span style="font-weight: 500; color: #4338ca;">{{ leave.leaveContent }}</span>
+          </td>
+          <td>
+            <div>📅 <strong>{{ leave.fromDate }}</strong> &rarr; <strong>{{ leave.toDate }}</strong></div>
+          </td>
+          <td>
+            <div style="max-width: 220px; white-space: normal; line-height: 1.4; color: #475569;">
+              {{ leave.reason }}
+            </div>
+          </td>
+          <td>{{ leave.timestamp | date:'mediumDate' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="leave.status.toLowerCase()">
+              {{ leave.status }}
+            </span>
+          </td>
+          <td>
+            <span style="font-size: 12.5px; color: #64748b;">{{ leave.response || '—' }}</span>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end;" *ngIf="leave.status === 'Pending'">
+              <button mat-flat-button color="primary" style="height: 32px; line-height: 32px; padding: 0 12px; font-size: 12px;" (click)="quickApprove(leave)">
+                <mat-icon style="font-size: 16px; height: 16px; width: 16px; margin-right: 4px;">check</mat-icon> Approve
+              </button>
+              <button mat-stroked-button color="warn" style="height: 32px; line-height: 32px; padding: 0 12px; font-size: 12px;" (click)="quickReject(leave)">
+                <mat-icon style="font-size: 16px; height: 16px; width: 16px; margin-right: 4px;">close</mat-icon> Reject
+              </button>
+            </div>
+            <button mat-button (click)="openResponseModal(leave)" *ngIf="leave.status !== 'Pending'" style="font-size: 12px;">
+              Edit Note
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state-container" *ngIf="filteredLeaves.length === 0 && !loading" style="background: #fff; padding: 48px 20px; text-align: center; border-radius: 12px; border: 1px dashed #cbd5e1; margin-top: 20px;">
+    <mat-icon style="font-size: 48px; height: 48px; width: 48px; color: #94a3b8; margin-bottom: 12px;">event_note</mat-icon>
+    <h3 style="margin: 0 0 6px 0; color: #1e293b;">No Leave Requests Found</h3>
+    <p style="margin: 0; color: #64748b; font-size: 14px;">There are no leave applications matching your current filter.</p>
+  </div>
+
+  <!-- Custom Response Modal -->
+  <div class="modal" modal [show]="modals.responseModal" [options]="{width:'520px'}">
+    <div class="dialog">
+      <div class="modal-header">Update Leave Response</div>
+      <div class="close" (click)="modals.responseModal=false">&times;</div>
+      <div class="modal-body" style="padding: 24px;">
+        <mat-form-field appearance="outline" style="width: 100%;">
+          <mat-label>HR Manager Response / Reason</mat-label>
+          <textarea [(ngModel)]="response" #res="ngModel" matInput rows="3" required placeholder="Write a note to the employee..."></textarea>
+        </mat-form-field>
+        <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;">
+          <button mat-stroked-button (click)="modals.responseModal=false">Cancel</button>
+          <button mat-raised-button color="primary" [disabled]="res.invalid" (click)="acceptRejectLeave(2, activeLeave.userId)">Approve & Save</button>
+          <button mat-raised-button color="warn" [disabled]="res.invalid" (click)="acceptRejectLeave(3, activeLeave.userId)">Reject & Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <loading [show]="loading"></loading>
+</div>

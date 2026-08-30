@@ -1,0 +1,218 @@
+<div class="roles-container">
+  <!-- Top Header & Multi-Tenant Organization Switcher -->
+  <div class="page-header-title">
+    <div class="header-left-title">
+      <mat-icon style="color: #6366f1;">shield</mat-icon>
+      <span>Multi-Tenant Roles & Granular Permissions Hub</span>
+    </div>
+
+    <div class="tenant-selector-bar" *ngIf="tenants && tenants.length > 0">
+      <span class="tenant-label">Organization:</span>
+      <select [ngModel]="currentTenant?.id" (ngModelChange)="switchTenant($event)" class="tenant-dropdown">
+        <option *ngFor="let t of tenants" [value]="t.id">🏢 {{ t.name }} ({{ t.subdomain }})</option>
+      </select>
+
+      <button class="btn btn-primary" style="padding: 7px 16px; font-size: 13px;" (click)="openCreateRoleModal()">
+        <mat-icon style="font-size: 16px; height: 16px; width: 16px;">add</mat-icon>
+        <span>Create Custom Role</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Strip -->
+  <div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card" style="border-left: 4px solid #6366f1;">
+      <div class="stat-icon" style="background: #eef2ff; color: #6366f1;"><mat-icon>vpn_key</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ roles.length }}</span>
+        <span class="stat-title">Active Tenant Roles</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="border-left: 4px solid #0ea5e9;">
+      <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;"><mat-icon>tune</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ allPermissions.length }}</span>
+        <span class="stat-title">Granular Permissions</span>
+      </div>
+    </div>
+
+    <div class="stat-card" style="border-left: 4px solid #10b981;">
+      <div class="stat-icon" style="background: #dcfce7; color: #15803d;"><mat-icon>domain</mat-icon></div>
+      <div class="stat-info">
+        <span class="stat-num">{{ tenants.length }}</span>
+        <span class="stat-title">Isolated Tenants</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout: Left Role List, Right Permissions Matrix -->
+  <div class="roles-matrix-layout">
+    <!-- Left: Roles List -->
+    <div class="roles-sidebar-list">
+      <div class="roles-sidebar-header">
+        <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b;">Tenant Roles</h4>
+      </div>
+
+      <div class="roles-items-scroll">
+        <div
+          *ngFor="let role of roles"
+          class="role-card-item"
+          [class.active]="selectedRole?.id === role.id"
+          (click)="selectRole(role)"
+        >
+          <div class="role-card-top">
+            <span class="role-badge" [style.background-color]="getRoleBadgeColor(role.roleName)">
+              {{ role.roleName }}
+            </span>
+            <span class="sys-badge" *ngIf="role.isSystemRole">System</span>
+            <span class="custom-badge" *ngIf="!role.isSystemRole">Custom</span>
+          </div>
+
+          <div class="role-desc">{{ role.description }}</div>
+
+          <div class="role-footer-meta">
+            <span class="perm-count">
+              <mat-icon style="font-size: 14px; vertical-align: middle;">verified_user</mat-icon>
+              {{ role.permissionsCount }} Permissions
+            </span>
+            <span class="member-count">{{ role.memberCount }} Staff</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Selected Role Permissions Matrix -->
+    <div class="matrix-main-panel" *ngIf="selectedRole">
+      <div class="matrix-panel-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">
+              {{ selectedRole.roleName }}
+            </h3>
+            <span class="sys-badge" *ngIf="selectedRole.isSystemRole">System Protected Role</span>
+          </div>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">
+            {{ selectedRole.description }} &bull; Assigned to {{ selectedRole.memberCount }} employees
+          </p>
+        </div>
+
+        <div class="matrix-actions">
+          <button class="btn btn-outline" (click)="openEditRoleModal(selectedRole)">
+            <mat-icon style="font-size: 16px;">edit</mat-icon>
+            <span>Edit Permissions</span>
+          </button>
+          <button class="btn btn-danger" *ngIf="!selectedRole.isSystemRole" (click)="deleteRole(selectedRole)">
+            <mat-icon style="font-size: 16px;">delete</mat-icon>
+            <span>Delete Role</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Categories & Active Permissions -->
+      <div class="matrix-categories-scroll">
+        <div *ngFor="let cat of permissionCategories" class="perm-category-block">
+          <div class="category-title-strip">
+            <mat-icon style="font-size: 18px; color: #4f46e5;">folder</mat-icon>
+            <span style="font-weight: 700; font-size: 14px; color: #1e293b;">{{ cat.category }}</span>
+          </div>
+
+          <div class="permissions-checklist-grid">
+            <div
+              *ngFor="let p of cat.permissions"
+              class="perm-pill-card"
+              [class.active-granted]="selectedRole.permissions?.includes(p.key)"
+            >
+              <mat-icon style="font-size: 18px;" [style.color]="selectedRole.permissions?.includes(p.key) ? '#10b981' : '#cbd5e1'">
+                {{ selectedRole.permissions?.includes(p.key) ? 'check_circle' : 'cancel' }}
+              </mat-icon>
+              <div>
+                <div class="perm-name">{{ p.name }}</div>
+                <div class="perm-key-code">{{ p.key }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CREATE / EDIT ROLE ================= -->
+<div class="modal" *ngIf="roleModal">
+  <div class="dialog" style="max-width: 780px; width: 95%;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <mat-icon style="color: #4f46e5;">shield</mat-icon>
+        <span>{{ isEditing ? 'Edit Role Permissions' : 'Create Custom Tenant Role' }}</span>
+      </div>
+      <button class="close" (click)="roleModal = false">&times;</button>
+    </div>
+
+    <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+      <!-- Role Basic Info -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px;">
+        <div>
+          <label style="font-size: 12.5px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Role Name *</label>
+          <input type="text" [(ngModel)]="roleForm.roleName" placeholder="e.g. Branch Manager, Team Lead" class="hrms-input" />
+        </div>
+        <div>
+          <label style="font-size: 12.5px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Role Description</label>
+          <input type="text" [(ngModel)]="roleForm.description" placeholder="Department supervisor or specific permissions" class="hrms-input" />
+        </div>
+      </div>
+
+      <!-- Permission Checklist Matrix -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label style="font-size: 13px; font-weight: 700; color: #1e293b;">
+            Permissions Checklist ({{ roleForm.permissions.length }} Selected)
+          </label>
+        </div>
+
+        <div *ngFor="let cat of permissionCategories" class="modal-perm-category">
+          <div class="category-toggle-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input
+                type="checkbox"
+                [checked]="isCategoryFullySelected(cat)"
+                (change)="toggleCategoryInForm(cat)"
+                id="cat_{{ cat.category }}"
+              />
+              <label [for]="'cat_' + cat.category" style="font-weight: 700; font-size: 13.5px; color: #1e293b; cursor: pointer;">
+                {{ cat.category }}
+              </label>
+            </div>
+            <button class="select-all-btn" (click)="toggleCategoryInForm(cat)">
+              {{ isCategoryFullySelected(cat) ? 'Deselect Category' : 'Select All in Category' }}
+            </button>
+          </div>
+
+          <div class="modal-perm-grid">
+            <div
+              *ngFor="let p of cat.permissions"
+              class="perm-checkbox-item"
+              [class.checked]="roleForm.permissions.includes(p.key)"
+              (click)="togglePermissionInForm(p.key)"
+            >
+              <input type="checkbox" [checked]="roleForm.permissions.includes(p.key)" (click)="$event.stopPropagation()" (change)="togglePermissionInForm(p.key)" />
+              <div>
+                <div style="font-weight: 600; font-size: 13px; color: #1e293b;">{{ p.name }}</div>
+                <div style="font-size: 11px; color: #64748b;">{{ p.description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 24px;">
+        <button class="btn btn-secondary" (click)="roleModal = false">Cancel</button>
+        <button class="btn btn-primary" [disabled]="!roleForm.roleName.trim()" (click)="saveRole()">
+          {{ isEditing ? 'Save Permissions' : 'Create Role' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<loading [show]="loading"></loading>

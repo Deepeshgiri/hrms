@@ -1,37 +1,81 @@
-<admin-header></admin-header>
-<admin-sidebar></admin-sidebar>
-<div id="page-content">
-    <div class="row attendance-row" *ngIf="permissions.hrms_reports">
-        <select class="select"
-            (change)="loadAttendance($event.target.value);loadMonthlyAttendance($event.target.value)">
-            <option>Select User</option>
-            <option *ngFor="let u of users" [value]="u.userId">{{u.name}}</option>
-        </select>
+<div class="user-attendance-page">
+  <div class="page-header-title">
+    <div class="header-left-title">
+      <mat-icon>calendar_view_month</mat-icon>
+      <span>{{ auth.isEmployee() ? 'My Monthly Attendance & Punch Calendar' : 'Staff Attendance & Shift Calendar' }}</span>
     </div>
-    <div class="row">
-        <div class="col-sm-6 pr" id="full-calendar">
-            <full-calendar #mycal [deepChangeDetection]="true" [options]="calendarOptions"></full-calendar>
-        </div>
-        <div class="col-sm-6 pl" *ngIf="permissions.hrms_reports">
-            <div class="content-title row justify-content-between">Monthly Attendance
-                <div class="monthly-attendance-nav">
-                    <mat-icon (click)="changeDate('prev')">navigate_before</mat-icon>
-                    <mat-icon (click)="changeDate('next')">navigate_next</mat-icon>
-                </div>
-            </div>
-            <table class="pinnacle-table">
-                <tr>
-                    <th>Date</th>
-                    <th>Entries</th>
-                    <th class="minutes">Minutes Spend</th>
-                </tr>
-                <tr *ngFor="let item of monthlyAttendance">
-                    <td>{{item.date}}</td>
-                    <td>{{getFirstAndLastEntries(item.datetime)}}</td>
-                    <td class="minutes">{{getMinutesSpent(item.date,item.datetime)}}</td>
-                </tr>
-            </table>
-        </div>
+
+    <!-- User Selection Filter for Admin / HR -->
+    <div class="filter-user-select" *ngIf="!auth.isEmployee()" style="min-width: 260px;">
+      <mat-form-field appearance="outline" style="width: 100%; margin-bottom: -1.25em;">
+        <mat-label>View Specific Employee</mat-label>
+        <mat-select [(value)]="selectedUserId" (selectionChange)="onUserSelect($event.value)">
+          <mat-option [value]="null">Organization Overview</mat-option>
+          <mat-option *ngFor="let u of users" [value]="u.userId">
+            {{u.name}} ({{u.employeeId || 'EMP-' + u.userId}})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
+  </div>
+
+  <div class="attendance-grid-layout" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-top: 16px;">
+    <!-- Left: Calendar View -->
+    <div class="calendar-card" style="background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+      <full-calendar #mycal [deepChangeDetection]="true" [options]="calendarOptions"></full-calendar>
+    </div>
+
+    <!-- Right: Monthly Attendance Table -->
+    <div class="table-card" style="background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+      <div class="table-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #1e293b;">
+          📊 {{ monthlyDate | date:'MMMM yyyy' }} Log
+        </h3>
+        <div class="month-nav-btns" style="display: flex; gap: 4px;">
+          <button mat-icon-button (click)="changeDate('prev')" matTooltip="Previous Month">
+            <mat-icon>navigate_before</mat-icon>
+          </button>
+          <button mat-icon-button (click)="changeDate('next')" matTooltip="Next Month">
+            <mat-icon>navigate_next</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper" *ngIf="monthlyAttendance && monthlyAttendance.length; else noMonthlyData">
+        <table class="hrms-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Punches (First - Last)</th>
+              <th>Hours Logged</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of monthlyAttendance">
+              <td><strong>{{ item.date | date:'mediumDate' }}</strong></td>
+              <td>
+                <span class="punch-pill" style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;">
+                  {{ getFirstAndLastEntries(item.datetime) }}
+                </span>
+              </td>
+              <td>
+                <span style="font-weight: 600; color: #059669;">
+                  {{ getMinutesSpent(item.date, item.datetime) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noMonthlyData>
+        <div class="empty-state-mini" style="text-align: center; padding: 36px 12px; color: #64748b;">
+          <mat-icon style="font-size: 32px; height: 32px; width: 32px; color: #94a3b8; margin-bottom: 6px;">event_busy</mat-icon>
+          <p style="margin: 0; font-size: 13.5px;">No attendance records for this month.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
 </div>
+
 <loading [show]="loading"></loading>

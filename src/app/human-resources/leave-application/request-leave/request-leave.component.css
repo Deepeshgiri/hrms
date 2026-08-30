@@ -1,3 +1,63 @@
-[class*="col-"]{
-    padding-right: 15px;
+.type-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.type-chip-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.type-chip-card:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.type-chip-card.selected {
+  box-shadow: 0 0 0 1px currentColor;
+}
+
+.chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.chip-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.chip-quota {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.half-radio {
+  display: flex;
+  gap: 12px;
 }

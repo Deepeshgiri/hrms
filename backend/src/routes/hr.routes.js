@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../db.js';
 import { authMiddleware, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, todayStr, pad } from '../helpers.js';
+import { currentTenant } from '../tenant.js';
 
 const router = express.Router();
 
@@ -9,24 +10,26 @@ router.use(authMiddleware);
 
 const DEFAULT_FROM_TIME = '09:00:00';
 
-async function getUserFirstEntryToday() {
+async function getUserFirstEntryToday(tenantId) {
   const today = todayStr();
   const [rows] = await pool.query(
     `SELECT a.userId, DATE_FORMAT(MIN(a.datetime), '%H:%i:%s') as firstEntry
      FROM attendance a
-     WHERE DATE(a.datetime) = ?
+     WHERE a.tenantId = ? AND DATE(a.datetime) = ?
      GROUP BY a.userId`,
-    [today]
+    [tenantId, today]
   );
   return rows;
 }
 
-async function getUsersWithTimings() {
+async function getUsersWithTimings(tenantId) {
   const [rows] = await pool.query(
     `SELECT u.id as userId, u.name,
             COALESCE(t.fromTime, '${DEFAULT_FROM_TIME}') as fromTime
      FROM users u
-     LEFT JOIN timings t ON t.userId = u.id`
+     LEFT JOIN timings t ON t.userId = u.id
+     WHERE u.tenantId = ?`,
+    [tenantId]
   );
   return rows;
 }
@@ -62,30 +65,31 @@ router.get(
       });
     }
 
-    const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users');
+    const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users WHERE tenantId = ?', [currentTenant(req)]);
     const totalEmployees = Number(totalRows[0].c) || 0;
 
     const [presentRows] = await pool.query(
-      `SELECT COUNT(DISTINCT userId) as c FROM attendance WHERE DATE(datetime) = ?`,
-      [today]
+      `SELECT COUNT(DISTINCT userId) as c FROM attendance WHERE tenantId = ? AND DATE(datetime) = ?`,
+      [currentTenant(req), today]
     );
     const presentToday = Number(presentRows[0].c) || 0;
 
     const [leaveRows] = await pool.query(
       `SELECT COUNT(DISTINCT userId) as c FROM leaves
-       WHERE status = 'Accepted'
+       WHERE tenantId = ? AND status = 'Accepted'
          AND (COALESCE(fromDate, date) <= ? AND COALESCE(toDate, date) >= ?)`,
-      [today, today]
+      [currentTenant(req), today, today]
     );
     const onLeave = Number(leaveRows[0].c) || 0;
 
     const [pendingRows] = await pool.query(
-      "SELECT COUNT(*) as c FROM leaves WHERE status = 'Pending'"
+      "SELECT COUNT(*) as c FROM leaves WHERE tenantId = ? AND status = 'Pending'",
+      [currentTenant(req)]
     );
     const pendingLeaves = Number(pendingRows[0].c) || 0;
 
-    const firstEntries = await getUserFirstEntryToday();
-    const users = await getUsersWithTimings();
+    const firstEntries = await getUserFirstEntryToday(currentTenant(req));
+    const users = await getUsersWithTimings(currentTenant(req));
 
     const entryMap = {};
     firstEntries.forEach((e) => {
@@ -112,24 +116,26 @@ router.get(
   asyncHandler(async (req, res) => {
     const month = Number(req.query.month) || new Date().getMonth() + 1;
     const year = Number(req.query.year) || new Date().getFullYear();
+    const tenantId = currentTenant(req);
 
     const [users] = await pool.query(
-      `SELECT u.id as userId, u.name FROM users u ORDER BY u.name`
+      `SELECT u.id as userId, u.name FROM users u WHERE u.tenantId = ? ORDER BY u.name`,
+      [tenantId]
     );
 
     const [presentRows] = await pool.query(
       `SELECT userId, COUNT(DISTINCT DATE(datetime)) as presentDays
        FROM attendance
-       WHERE YEAR(datetime) = ? AND MONTH(datetime) = ?
+       WHERE tenantId = ? AND YEAR(datetime) = ? AND MONTH(datetime) = ?
        GROUP BY userId`,
-      [year, month]
+      [tenantId, year, month]
     );
     const [leaveRows] = await pool.query(
       `SELECT userId, COUNT(DISTINCT DATE(COALESCE(fromDate, date))) as leaveDays
        FROM leaves
-       WHERE status = 'Accepted' AND YEAR(COALESCE(fromDate, date)) = ? AND MONTH(COALESCE(fromDate, date)) = ?
+       WHERE tenantId = ? AND status = 'Accepted' AND YEAR(COALESCE(fromDate, date)) = ? AND MONTH(COALESCE(fromDate, date)) = ?
        GROUP BY userId`,
-      [year, month]
+      [tenantId, year, month]
     );
 
     const presentMap = {};
@@ -161,9 +167,9 @@ router.get(
     const [rows] = await pool.query(
       `SELECT MONTH(COALESCE(fromDate, date)) as month, status, COUNT(*) as c
        FROM leaves
-       WHERE YEAR(COALESCE(fromDate, date)) = ?
+       WHERE tenantId = ? AND YEAR(COALESCE(fromDate, date)) = ?
        GROUP BY MONTH(COALESCE(fromDate, date)), status`,
-      [year]
+      [currentTenant(req), year]
     );
 
     const data = {};
@@ -187,8 +193,9 @@ router.get(
   '/analytics/overview',
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
-    const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users');
-    const [pendingRows] = await pool.query("SELECT COUNT(*) as c FROM leaves WHERE status = 'Pending'");
+    const tenantId = currentTenant(req);
+    const [totalRows] = await pool.query('SELECT COUNT(*) as c FROM users WHERE tenantId = ?', [tenantId]);
+    const [pendingRows] = await pool.query("SELECT COUNT(*) as c FROM leaves WHERE tenantId = ? AND status = 'Pending'", [tenantId]);
 
     res.json({
       totalEmployees: Number(totalRows[0].c) || 0,
@@ -211,6 +218,13 @@ router.post(
       return res.status(400).json({ success: false, message: 'userId and date are required', error: 'userId and date are required' });
     }
 
+    // Verify the target employee belongs to the caller's tenant
+    const tenantId = currentTenant(req);
+    const [targetUser] = await pool.query('SELECT id, tenantId FROM users WHERE id = ?', [Number(userId)]);
+    if (targetUser.length === 0 || targetUser[0].tenantId !== tenantId) {
+      return res.status(404).json({ success: false, message: 'Employee not found in your organization' });
+    }
+
     const d = String(date).slice(0, 10);
     const conn = await pool.getConnection();
     try {
@@ -218,23 +232,23 @@ router.post(
 
       if (checkIn) {
         await conn.query(
-          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine)
-           VALUES (?, ?, 'manual', ?, ?)`,
-          [Number(userId), `${d} ${checkIn}`, status || 'Present', remarks || 'Manual attendance entry']
+          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine, tenantId)
+           VALUES (?, ?, 'manual', ?, ?, ?)`,
+          [Number(userId), `${d} ${checkIn}`, status || 'Present', remarks || 'Manual attendance entry', tenantId]
         );
       }
       if (checkOut) {
         await conn.query(
-          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine)
-           VALUES (?, ?, 'manual', ?, ?)`,
-          [Number(userId), `${d} ${checkOut}`, status || 'Present', remarks || 'Manual attendance entry']
+          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine, tenantId)
+           VALUES (?, ?, 'manual', ?, ?, ?)`,
+          [Number(userId), `${d} ${checkOut}`, status || 'Present', remarks || 'Manual attendance entry', tenantId]
         );
       }
       if (!checkIn && !checkOut) {
         await conn.query(
-          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine)
-           VALUES (?, ?, 'manual', ?, ?)`,
-          [Number(userId), `${d} 09:00:00`, status || 'Present', remarks || 'Manual attendance entry']
+          `INSERT INTO attendance (userId, datetime, entryType, status, rawLine, tenantId)
+           VALUES (?, ?, 'manual', ?, ?, ?)`,
+          [Number(userId), `${d} 09:00:00`, status || 'Present', remarks || 'Manual attendance entry', tenantId]
         );
       }
 

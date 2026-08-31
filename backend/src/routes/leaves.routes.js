@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { authMiddleware, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, MONTH_NAMES, monthNameToNumber, todayStr } from '../helpers.js';
 import { logAudit } from '../audit.js';
+import { currentTenant } from '../tenant.js';
 import {
   getFinancialYearInfo,
   getUserDetailedLeaveBalances,
@@ -95,7 +96,10 @@ router.get(
   '/users-leaves-info',
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
-    const [users] = await pool.query('SELECT id, name FROM users ORDER BY name ASC');
+    const [users] = await pool.query(
+      'SELECT id, name FROM users WHERE tenantId = ? ORDER BY name ASC',
+      [currentTenant(req)]
+    );
     const result = [];
     for (const u of users) {
       const data = await getUserDetailedLeaveBalances(u.id);
@@ -117,7 +121,10 @@ router.get(
 router.get(
   '/pending-leaves-count',
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query("SELECT COUNT(*) as count FROM leaves WHERE status = 'Pending'");
+    const [rows] = await pool.query(
+      "SELECT COUNT(*) as count FROM leaves WHERE tenantId = ? AND status = 'Pending'",
+      [currentTenant(req)]
+    );
     res.json(Number(rows[0].count));
   })
 );
@@ -128,7 +135,8 @@ router.get(
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const [rows] = await pool.query(
-      `${LEAVE_SELECT} LEFT JOIN users u ON u.id = l.userId ORDER BY l.timestamp DESC`
+      `${LEAVE_SELECT} LEFT JOIN users u ON u.id = l.userId WHERE l.tenantId = ? ORDER BY l.timestamp DESC`,
+      [currentTenant(req)]
     );
     res.json(leaveRowsToResponse(rows));
   })
@@ -161,9 +169,9 @@ router.post(
     const typeCode = String(leaveType || 'CL').toUpperCase();
 
     const [insertResult] = await pool.query(
-      `INSERT INTO leaves (userId, leaveContent, leaveType, fromDate, toDate, date, duration, half, reason, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
-      [req.user.userId, leaveContent, typeCode, f, t, date, duration, half || null, reason]
+      `INSERT INTO leaves (userId, leaveContent, leaveType, fromDate, toDate, date, duration, half, reason, status, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)`,
+      [req.user.userId, leaveContent, typeCode, f, t, date, duration, half || null, reason, req.user.tenantId || 1]
     );
 
     logAudit(req, {
@@ -190,6 +198,14 @@ router.put(
     }
 
     const newStatus = Number(status) === 2 ? 'Accepted' : 'Rejected';
+
+    const [checkRow] = await pool.query(
+      'SELECT id, tenantId FROM leaves WHERE id = ?',
+      [Number(leaveId)]
+    );
+    if (checkRow.length === 0 || checkRow[0].tenantId !== currentTenant(req)) {
+      return res.status(404).json({ success: false, message: 'Leave not found' });
+    }
 
     await pool.query('UPDATE leaves SET status = ?, response = ? WHERE id = ?', [
       newStatus,
@@ -225,8 +241,8 @@ router.put(
       return res.status(400).json({ success: false, message: 'leaveId is required' });
     }
 
-    const [existing] = await pool.query('SELECT userId FROM leaves WHERE id = ?', [Number(leaveId)]);
-    if (existing.length === 0) {
+    const [existing] = await pool.query('SELECT userId, tenantId FROM leaves WHERE id = ?', [Number(leaveId)]);
+    if (existing.length === 0 || existing[0].tenantId !== (req.user.tenantId || 1)) {
       return res.status(404).json({ success: false, message: 'Leave not found' });
     }
     if (req.user.roleId === 3 && existing[0].userId !== req.user.userId) {
@@ -256,8 +272,8 @@ router.delete(
   asyncHandler(async (req, res) => {
     const leaveId = Number(req.params.leaveId);
 
-    const [existing] = await pool.query('SELECT userId, leaveContent FROM leaves WHERE id = ?', [leaveId]);
-    if (existing.length === 0) {
+    const [existing] = await pool.query('SELECT userId, tenantId, leaveContent FROM leaves WHERE id = ?', [leaveId]);
+    if (existing.length === 0 || existing[0].tenantId !== (req.user.tenantId || 1)) {
       return res.status(404).json({ success: false, message: 'Leave not found' });
     }
     if (req.user.roleId === 3 && existing[0].userId !== req.user.userId) {
@@ -285,7 +301,7 @@ router.post(
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const { targetFY } = req.body; // e.g. "2027-2028"
-    const tenantId = req.headers['x-tenant-id'] || req.user.tenantId || 1;
+    const tenantId = currentTenant(req);
 
     const result = await executeFinancialYearRollover(tenantId, targetFY);
 
@@ -310,6 +326,7 @@ router.get(
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const fyInfo = getFinancialYearInfo();
+    const tenantId = currentTenant(req);
 
     const [breakdown] = await pool.query(
       `SELECT lt.name, lt.code, lt.colorCode,
@@ -317,10 +334,10 @@ router.get(
               COALESCE(SUM(ultb.carried), 0) as totalCarried,
               COALESCE(SUM(ultb.used), 0) as totalUsed
        FROM leave_types lt
-       LEFT JOIN user_leave_type_balances ultb ON ultb.leaveTypeCode = lt.code AND ultb.financialYear = ?
+       LEFT JOIN user_leave_type_balances ultb ON ultb.leaveTypeCode = lt.code AND ultb.financialYear = ? AND ultb.tenantId = ?
        WHERE lt.status = 'active'
        GROUP BY lt.id, lt.name, lt.code, lt.colorCode`,
-      [fyInfo.fyString]
+      [fyInfo.fyString, tenantId]
     );
 
     res.json({
@@ -351,7 +368,8 @@ router.get(
       `SELECT leaveDate, COALESCE(title, 'Official Holiday') as title,
               COALESCE(description, '') as description,
               COALESCE(type, 'Company') as type
-       FROM institute_holidays ORDER BY leaveDate`
+       FROM institute_holidays WHERE tenantId = ? ORDER BY leaveDate`,
+      [currentTenant(req)]
     );
     res.json(
       rows.map((r) => ({
@@ -377,10 +395,10 @@ router.post(
     }
     const cleanDate = String(date).slice(0, 10);
     await pool.query(
-      `INSERT INTO institute_holidays (leaveDate, title, description, type)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), type = VALUES(type)`,
-      [cleanDate, title.trim(), description || null, type]
+      `INSERT INTO institute_holidays (leaveDate, title, description, type, tenantId)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), type = VALUES(type), tenantId = VALUES(tenantId)`,
+      [cleanDate, title.trim(), description || null, type, req.user.tenantId || 1]
     );
     res.json({ success: true, message: 'Holiday saved successfully' });
   })
@@ -396,8 +414,8 @@ router.put(
       return res.status(400).json({ success: false, message: 'title is required' });
     }
     const [result] = await pool.query(
-      'UPDATE institute_holidays SET title = ?, description = ?, type = ? WHERE leaveDate = ?',
-      [title.trim(), description || null, type || 'Company', cleanDate]
+      'UPDATE institute_holidays SET title = ?, description = ?, type = ? WHERE leaveDate = ? AND tenantId = ?',
+      [title.trim(), description || null, type || 'Company', cleanDate, req.user.tenantId || 1]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Holiday not found' });
@@ -411,7 +429,10 @@ router.delete(
   '/institute-holiday/:date',
   asyncHandler(async (req, res) => {
     const cleanDate = String(req.params.date).slice(0, 10);
-    const [result] = await pool.query('DELETE FROM institute_holidays WHERE leaveDate = ?', [cleanDate]);
+    const [result] = await pool.query(
+      'DELETE FROM institute_holidays WHERE leaveDate = ? AND tenantId = ?',
+      [cleanDate, req.user.tenantId || 1]
+    );
     res.json({
       success: result.affectedRows > 0,
       message: result.affectedRows > 0 ? 'Holiday deleted' : 'Holiday not found',
@@ -427,12 +448,14 @@ router.get(
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const year = new Date().getFullYear();
+    const tenantId = currentTenant(req);
     const [rows] = await pool.query(
       `SELECT u.id as userId, u.name, lb.month, lb.leaves
        FROM users u
-       LEFT JOIN leave_balances lb ON lb.userId = u.id AND lb.year = ?
+       LEFT JOIN leave_balances lb ON lb.userId = u.id AND lb.year = ? AND lb.tenantId = ?
+       WHERE u.tenantId = ?
        ORDER BY u.name, lb.month`,
-      [year]
+      [year, tenantId, tenantId]
     );
     const byUser = {};
     rows.forEach((r) => {
@@ -460,10 +483,10 @@ router.put(
       const month = monthNameToNumber(item.month);
       if (!month) continue;
       await pool.query(
-        `INSERT INTO leave_balances (userId, month, year, leaves, alloted)
-         VALUES (?, ?, ?, ?, ?)
+        `INSERT INTO leave_balances (userId, month, year, leaves, alloted, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE leaves = VALUES(leaves)`,
-        [Number(userId), month, year, Number(item.leaves) || 0, Number(item.leaves) || 0]
+        [Number(userId), month, year, Number(item.leaves) || 0, Number(item.leaves) || 0, req.user.tenantId || 1]
       );
     }
 
@@ -484,12 +507,14 @@ router.get(
   requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const year = new Date().getFullYear();
+    const tenantId = currentTenant(req);
     const [rows] = await pool.query(
       `SELECT u.id as userId, u.name, lb.month, lb.leaves, lb.alloted, lb.carried, lb.used
        FROM users u
-       LEFT JOIN leave_balances lb ON lb.userId = u.id AND lb.year = ?
+       LEFT JOIN leave_balances lb ON lb.userId = u.id AND lb.year = ? AND lb.tenantId = ?
+       WHERE u.tenantId = ?
        ORDER BY u.name, lb.month`,
-      [year]
+      [year, tenantId, tenantId]
     );
     const byUser = {};
     rows.forEach((r) => {
@@ -520,8 +545,8 @@ router.put(
       const month = monthNameToNumber(item.month);
       if (!month) continue;
       await pool.query(
-        `INSERT INTO leave_balances (userId, month, year, leaves, alloted, carried, used)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO leave_balances (userId, month, year, leaves, alloted, carried, used, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE leaves = VALUES(leaves), alloted = VALUES(alloted), carried = VALUES(carried), used = VALUES(used)`,
         [
           Number(userId),
@@ -531,6 +556,7 @@ router.put(
           Number(item.alloted) || 0,
           Number(item.carried) || 0,
           Number(item.used) || 0,
+          req.user.tenantId || 1,
         ]
       );
     }
@@ -553,6 +579,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const month = Number(req.query.month) + 1;
     const year = Number(req.query.year) || new Date().getFullYear();
+    const tenantId = currentTenant(req);
     const [rows] = await pool.query(
       `SELECT u.name as userName, l.leaveContent, COALESCE(l.leaveType, 'CL') as leaveType,
               COALESCE(lt.name, l.leaveType, 'Casual Leave') as leaveTypeName,
@@ -566,9 +593,9 @@ router.get(
        FROM leaves l
        JOIN users u ON u.id = l.userId
        LEFT JOIN leave_types lt ON lt.code = l.leaveType
-       WHERE MONTH(COALESCE(l.fromDate, l.date)) = ? AND YEAR(COALESCE(l.fromDate, l.date)) = ?
+       WHERE l.tenantId = ? AND MONTH(COALESCE(l.fromDate, l.date)) = ? AND YEAR(COALESCE(l.fromDate, l.date)) = ?
        ORDER BY u.name`,
-      [month, year]
+      [tenantId, month, year]
     );
     res.json(
       rows.map((r) => ({

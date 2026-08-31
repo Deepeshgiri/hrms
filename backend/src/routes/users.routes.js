@@ -4,6 +4,7 @@ import { pool } from '../db.js';
 import { authMiddleware, requireAdmin, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, toIso, toDateStr, todayStr, pad, MONTH_NAMES } from '../helpers.js';
 import { logAudit } from '../audit.js';
+import { currentTenant } from '../tenant.js';
 
 const router = express.Router();
 
@@ -64,7 +65,8 @@ router.get(
   '/meta/departments',
   asyncHandler(async (req, res) => {
     const [rows] = await pool.query(
-      `SELECT DISTINCT department FROM users WHERE department IS NOT NULL AND department != '' ORDER BY department`
+      `SELECT DISTINCT department FROM users WHERE tenantId = ? AND department IS NOT NULL AND department != '' ORDER BY department`,
+      [currentTenant(req)]
     );
     const depts = rows.map((r) => r.department);
     const defaults = ['Administration', 'Human Resources', 'Engineering', 'Finance', 'Design', 'Marketing', 'Sales', 'Operations'];
@@ -157,19 +159,21 @@ router.put(
   })
 );
 
-// GET /api/users
+// GET /api/users  (staff directory - Admin / HR only)
 router.get(
   '/',
+  requireAdminOrHR,
   asyncHandler(async (req, res) => {
     const { search, department, roleId } = req.query;
+    const tenantId = currentTenant(req);
 
     let sql = `SELECT u.id as userId, u.name, u.email, u.employeeId, u.designation, u.department, u.roleId,
                       r.roleName, t.fromTime, t.toTime, u.created_at
                FROM users u
                LEFT JOIN roles r ON r.id = u.roleId
                LEFT JOIN timings t ON t.userId = u.id
-               WHERE 1 = 1`;
-    const params = [];
+               WHERE u.tenantId = ?`;
+    const params = [tenantId];
 
     if (search) {
       sql += ` AND (u.name LIKE ? OR u.email LIKE ? OR u.employeeId LIKE ? OR u.designation LIKE ?)`;
@@ -690,7 +694,9 @@ router.get(
       `SELECT u.id as userId, u.name, t.fromTime, t.toTime
        FROM users u
        LEFT JOIN timings t ON t.userId = u.id
-       ORDER BY u.name`
+       WHERE u.tenantId = ?
+       ORDER BY u.name`,
+      [currentTenant(req)]
     );
     const result = rows.map((r) => ({
       userId: r.userId,
@@ -733,7 +739,8 @@ router.get(
   '/attendance',
   asyncHandler(async (req, res) => {
     const [rows] = await pool.query(
-      'SELECT datetime FROM attendance ORDER BY datetime ASC'
+      'SELECT datetime FROM attendance WHERE tenantId = ? ORDER BY datetime ASC',
+      [currentTenant(req)]
     );
     const timing = await getGlobalTiming();
     res.json({
@@ -748,16 +755,18 @@ router.get(
   '/attendance/today',
   asyncHandler(async (req, res) => {
     const today = todayStr();
+    const tenantId = currentTenant(req);
 
     const [users] = await pool.query(
-      `SELECT id as userId, name, employeeId, department, designation FROM users ORDER BY name`
+      `SELECT id as userId, name, employeeId, department, designation FROM users WHERE tenantId = ? ORDER BY name`,
+      [tenantId]
     );
     const [entries] = await pool.query(
       `SELECT a.userId, DATE_FORMAT(a.datetime, '%H:%i:%s') as entry, a.status, a.entryType
        FROM attendance a
-       WHERE DATE(a.datetime) = ?
+       WHERE a.tenantId = ? AND DATE(a.datetime) = ?
        ORDER BY a.datetime ASC`,
-      [today]
+      [tenantId, today]
     );
 
     const byUser = {};
@@ -803,9 +812,9 @@ router.get(
       `SELECT a.userId, a.datetime as punches, u.employeeId, u.name, u.department
        FROM attendance a
        JOIN users u ON u.id = a.userId
-       WHERE DATE(a.datetime) BETWEEN ? AND ?
+       WHERE a.tenantId = ? AND DATE(a.datetime) BETWEEN ? AND ?
        ORDER BY a.datetime ASC`,
-      [startDate, endDate]
+      [currentTenant(req), startDate, endDate]
     );
     res.json(
       rows.map((r) => ({
@@ -830,14 +839,15 @@ router.get(
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    const tenantId = currentTenant(req);
     const [rows] = await pool.query(
       `SELECT u.id as userId, u.name, u.email, u.employeeId, u.designation, u.department, u.roleId,
               r.roleName, t.fromTime, t.toTime, u.created_at
        FROM users u
        LEFT JOIN roles r ON r.id = u.roleId
        LEFT JOIN timings t ON t.userId = u.id
-       WHERE u.id = ?`,
-      [userId]
+       WHERE u.id = ? AND u.tenantId = ?`,
+      [userId, tenantId]
     );
 
     if (rows.length === 0) {

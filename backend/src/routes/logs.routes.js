@@ -2,6 +2,7 @@ import express from 'express';
 import { pool } from '../db.js';
 import { authMiddleware, requireAdminOrHR } from '../auth.js';
 import { asyncHandler, toIso } from '../helpers.js';
+import { currentTenant } from '../tenant.js';
 
 const router = express.Router();
 
@@ -26,8 +27,8 @@ router.get(
     let sql = `SELECT id, userId, userName, userEmail, userRole, action, entityType, entityId,
                       description, details, ipAddress, userAgent, created_at
                FROM audit_logs
-               WHERE 1 = 1`;
-    const params = [];
+               WHERE tenantId = ?`;
+    const params = [currentTenant(req)];
 
     if (search) {
       sql += ` AND (description LIKE ? OR userName LIKE ? OR action LIKE ? OR entityId LIKE ?)`;
@@ -64,7 +65,7 @@ router.get(
 
     const [rows] = await pool.query(sql, params);
 
-    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM audit_logs');
+    const [countRows] = await pool.query('SELECT COUNT(*) as total FROM audit_logs WHERE tenantId = ?', [currentTenant(req)]);
 
     res.json({
       total: countRows[0]?.total || 0,
@@ -81,14 +82,16 @@ router.get(
 router.get(
   '/stats',
   asyncHandler(async (req, res) => {
-    const [todayCount] = await pool.query('SELECT COUNT(*) as c FROM audit_logs WHERE DATE(created_at) = CURDATE()');
-    const [userCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE entityType = 'USER' AND DATE(created_at) = CURDATE()");
-    const [leaveCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE entityType = 'LEAVE' AND DATE(created_at) = CURDATE()");
-    const [payrollCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE entityType = 'PAYROLL' AND DATE(created_at) = CURDATE()");
-    const [attCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE entityType = 'ATTENDANCE' AND DATE(created_at) = CURDATE()");
+    const tenantId = currentTenant(req);
+    const [todayCount] = await pool.query('SELECT COUNT(*) as c FROM audit_logs WHERE tenantId = ? AND DATE(created_at) = CURDATE()', [tenantId]);
+    const [userCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE tenantId = ? AND entityType = 'USER' AND DATE(created_at) = CURDATE()", [tenantId]);
+    const [leaveCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE tenantId = ? AND entityType = 'LEAVE' AND DATE(created_at) = CURDATE()", [tenantId]);
+    const [payrollCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE tenantId = ? AND entityType = 'PAYROLL' AND DATE(created_at) = CURDATE()", [tenantId]);
+    const [attCount] = await pool.query("SELECT COUNT(*) as c FROM audit_logs WHERE tenantId = ? AND entityType = 'ATTENDANCE' AND DATE(created_at) = CURDATE()", [tenantId]);
 
     const [recentActions] = await pool.query(
-      `SELECT action, COUNT(*) as count FROM audit_logs WHERE DATE(created_at) = CURDATE() GROUP BY action ORDER BY count DESC LIMIT 5`
+      `SELECT action, COUNT(*) as count FROM audit_logs WHERE tenantId = ? AND DATE(created_at) = CURDATE() GROUP BY action ORDER BY count DESC LIMIT 5`,
+      [tenantId]
     );
 
     res.json({
@@ -109,7 +112,9 @@ router.get(
     const [rows] = await pool.query(
       `SELECT id, created_at, userName, userEmail, userRole, action, entityType, entityId, description, ipAddress
        FROM audit_logs
-       ORDER BY created_at DESC LIMIT 1000`
+       WHERE tenantId = ?
+       ORDER BY created_at DESC LIMIT 1000`,
+      [currentTenant(req)]
     );
 
     let csv = 'Log ID,Timestamp,User Name,User Email,Role,Action,Entity,Entity ID,Description,IP Address\n';

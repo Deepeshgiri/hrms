@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { authMiddleware, requireFinanceOrAdmin } from '../auth.js';
 import { asyncHandler, MONTH_NAMES } from '../helpers.js';
 import { logAudit } from '../audit.js';
+import { currentTenant } from '../tenant.js';
 
 const router = express.Router();
 
@@ -91,11 +92,19 @@ router.get(
       });
     }
 
-    const [empRows] = await pool.query('SELECT COUNT(*) as c FROM users');
-    const [procRows] = await pool.query("SELECT COUNT(*) as c FROM payslips WHERE status IN ('Processed','Paid')");
-    const [pendRows] = await pool.query("SELECT COUNT(*) as c FROM payslips WHERE status = 'Draft'");
+    const tenantId = currentTenant(req);
+    const [empRows] = await pool.query('SELECT COUNT(*) as c FROM users WHERE tenantId = ?', [tenantId]);
+    const [procRows] = await pool.query(
+      "SELECT COUNT(*) as c FROM payslips WHERE tenantId = ? AND status IN ('Processed','Paid')",
+      [tenantId]
+    );
+    const [pendRows] = await pool.query(
+      "SELECT COUNT(*) as c FROM payslips WHERE tenantId = ? AND status = 'Draft'",
+      [tenantId]
+    );
     const [payRows] = await pool.query(
-      "SELECT COALESCE(SUM(netSalary), 0) as total FROM payslips WHERE status IN ('Processed','Paid')"
+      "SELECT COALESCE(SUM(netSalary), 0) as total FROM payslips WHERE tenantId = ? AND status IN ('Processed','Paid')",
+      [tenantId]
     );
 
     res.json({
@@ -112,7 +121,11 @@ router.get(
   '/salary-structures',
   requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
-    const [rows] = await pool.query('SELECT id FROM salary_structures ORDER BY id');
+    const tenantId = currentTenant(req);
+    const [rows] = await pool.query(
+      'SELECT id FROM salary_structures WHERE tenantId = ? ORDER BY id',
+      [tenantId]
+    );
     const result = [];
     for (const r of rows) {
       const s = await getStructureWithComponents(r.id);
@@ -133,11 +146,20 @@ router.post(
       return res.status(400).json({ success: false, message: 'userId is required' });
     }
 
+    const tenantId = currentTenant(req);
+    const [targetUser] = await pool.query('SELECT id, tenantId FROM users WHERE id = ?', [Number(userId)]);
+    if (targetUser.length === 0 || targetUser[0].tenantId !== tenantId) {
+      return res.status(404).json({ success: false, message: 'Employee not found in your organization' });
+    }
+
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
-      const [existing] = await conn.query('SELECT id FROM salary_structures WHERE userId = ?', [Number(userId)]);
+      const [existing] = await conn.query(
+        'SELECT id FROM salary_structures WHERE userId = ? AND tenantId = ?',
+        [Number(userId), tenantId]
+      );
       let structureId;
 
       if (existing.length > 0) {
@@ -150,8 +172,8 @@ router.post(
         await conn.query('DELETE FROM salary_deductions WHERE salaryStructureId = ?', [structureId]);
       } else {
         const [insertResult] = await conn.query(
-          'INSERT INTO salary_structures (userId, basicSalary, hra, da) VALUES (?, ?, ?, ?)',
-          [Number(userId), Number(basicSalary) || 0, Number(hra) || 0, Number(da) || 0]
+          'INSERT INTO salary_structures (userId, basicSalary, hra, da, tenantId) VALUES (?, ?, ?, ?, ?)',
+          [Number(userId), Number(basicSalary) || 0, Number(hra) || 0, Number(da) || 0, tenantId]
         );
         structureId = insertResult.insertId;
       }
@@ -212,8 +234,8 @@ router.get(
                       p.status, p.paidDate, u.name as employeeName, u.employeeId
                FROM payslips p
                JOIN users u ON u.id = p.userId
-               WHERE 1 = 1`;
-    const params = [];
+               WHERE p.tenantId = ?`;
+    const params = [currentTenant(req)];
     if (month) {
       sql += ' AND p.month = ?';
       params.push(Number(month));
@@ -243,7 +265,11 @@ router.post(
       return res.status(400).json({ success: false, message: 'month and year are required' });
     }
 
-    const [employees] = await pool.query('SELECT userId FROM salary_structures');
+    const tenantId = currentTenant(req);
+    const [employees] = await pool.query(
+      'SELECT userId FROM salary_structures WHERE tenantId = ?',
+      [tenantId]
+    );
 
     let generated = 0;
     for (const emp of employees) {
@@ -251,15 +277,16 @@ router.post(
       if (!salary) continue;
 
       await pool.query(
-        `INSERT INTO payslips (userId, month, year, basicSalary, grossSalary, netSalary, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'Draft')
+        `INSERT INTO payslips (userId, month, year, basicSalary, grossSalary, netSalary, status, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, 'Draft', ?)
          ON DUPLICATE KEY UPDATE
            basicSalary = VALUES(basicSalary),
            grossSalary = VALUES(grossSalary),
            netSalary = VALUES(netSalary),
            status = 'Draft',
-           paidDate = NULL`,
-        [emp.userId, Number(month), Number(year), salary.basicSalary, salary.grossSalary, salary.netSalary]
+           paidDate = NULL,
+           tenantId = VALUES(tenantId)`,
+        [emp.userId, Number(month), Number(year), salary.basicSalary, salary.grossSalary, salary.netSalary, tenantId]
       );
       generated += 1;
     }
@@ -285,6 +312,13 @@ router.put(
 
     if (!id || !status) {
       return res.status(400).json({ success: false, message: 'id and status are required' });
+    }
+
+    const tenantId = currentTenant(req);
+
+    const [checkRows] = await pool.query('SELECT id FROM payslips WHERE id = ? AND tenantId = ?', [id, tenantId]);
+    if (checkRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Payslip not found' });
     }
 
     await pool.query(
@@ -317,7 +351,7 @@ router.delete(
   requireFinanceOrAdmin,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const [result] = await pool.query('DELETE FROM payslips WHERE id = ?', [id]);
+    const [result] = await pool.query('DELETE FROM payslips WHERE id = ? AND tenantId = ?', [id, currentTenant(req)]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Payslip not found' });
     }
@@ -338,12 +372,13 @@ router.get(
   '/payslip/:id/download',
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const tenantId = currentTenant(req);
     const [rows] = await pool.query(
       `SELECT p.*, u.name as employeeName, u.employeeId, u.designation, u.department
        FROM payslips p
        JOIN users u ON u.id = p.userId
-       WHERE p.id = ?`,
-      [id]
+       WHERE p.id = ? AND p.tenantId = ?`,
+      [id, tenantId]
     );
     if (rows.length === 0) {
       return res.status(404).send('Payslip not found');

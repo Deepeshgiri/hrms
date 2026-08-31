@@ -9,6 +9,7 @@ import { asyncHandler, toIso } from '../helpers.js';
 import { presenceStore } from '../redis.js';
 import { broadcastNewMessage, getIO } from '../socket.js';
 import { logAudit } from '../audit.js';
+import { currentTenant } from '../tenant.js';
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -47,9 +48,9 @@ router.get(
               p.isOnline, p.lastSeen
        FROM users u
        LEFT JOIN chat_user_presence p ON p.userId = u.id
-       WHERE u.id != ?
+       WHERE u.tenantId = ? AND u.id != ?
        ORDER BY u.name ASC`,
-      [currentUserId]
+      [currentTenant(req), currentUserId]
     );
 
     const onlineUsers = await presenceStore.getAllOnlineUsers();
@@ -144,6 +145,16 @@ router.post(
 
     const tUserId = Number(targetUserId);
 
+    // Verify the target user is in the caller's tenant
+    const tenantId = currentTenant(req);
+    const [targetRows] = await pool.query(
+      'SELECT id, tenantId FROM users WHERE id = ? AND tenantId = ?',
+      [tUserId, tenantId]
+    );
+    if (targetRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found in your organization' });
+    }
+
     // Check if 1-to-1 conversation already exists
     const [existing] = await pool.query(
       `SELECT c.id
@@ -165,8 +176,8 @@ router.post(
       await conn.beginTransaction();
 
       const [convResult] = await conn.query(
-        `INSERT INTO chat_conversations (type, createdBy, tenantId) VALUES ('direct', ?, 1)`,
-        [currentUserId]
+        `INSERT INTO chat_conversations (type, createdBy, tenantId) VALUES ('direct', ?, ?)`,
+        [currentUserId, tenantId]
       );
       const conversationId = convResult.insertId;
 

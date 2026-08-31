@@ -110,10 +110,10 @@ export async function ensureUserFinancialYearBalances(userId, tenantId = 1, targ
   for (let m = 1; m <= 12; m++) {
     const yr = m >= 4 ? startYr : startYr + 1;
     await pool.query(
-      `INSERT INTO leave_balances (userId, month, year, leaves, alloted, carried, used)
-       VALUES (?, ?, ?, ?, ?, 0, 0)
+      `INSERT INTO leave_balances (userId, month, year, leaves, alloted, carried, used, tenantId)
+       VALUES (?, ?, ?, ?, ?, 0, 0, ?)
        ON DUPLICATE KEY UPDATE alloted = VALUES(alloted)`,
-      [Number(userId), m, yr, monthlyAccrual, monthlyAccrual]
+      [Number(userId), m, yr, monthlyAccrual, monthlyAccrual, Number(tenantId)]
     );
   }
 
@@ -131,8 +131,11 @@ export async function getUserDetailedLeaveBalances(userId, targetFY = null) {
   const fyInfo = getFinancialYearInfo();
   const fy = targetFY || fyInfo.fyString;
 
-  // Ensure initialized
-  await ensureUserFinancialYearBalances(userId, 1, fy);
+  // Resolve the user's tenant and ensure balances are initialized for it
+  const [userRows] = await pool.query('SELECT id, tenantId FROM users WHERE id = ?', [Number(userId)]);
+  const userTenantId = userRows.length > 0 ? userRows[0].tenantId || 1 : 1;
+
+  await ensureUserFinancialYearBalances(userId, userTenantId, fy);
 
   // 1. Fetch catalog of active leave types
   const [types] = await pool.query('SELECT * FROM leave_types WHERE status = "active" ORDER BY id ASC');
@@ -224,7 +227,7 @@ export async function executeFinancialYearRollover(tenantId = 1, targetFY = null
   const fyInfo = getFinancialYearInfo();
   const nextFY = targetFY || `${fyInfo.startYear + 1}-${fyInfo.endYear + 1}`;
 
-  const [users] = await pool.query('SELECT id, name, tenantId FROM users WHERE tenantId = ? OR tenantId = 1', [Number(tenantId)]);
+  const [users] = await pool.query('SELECT id, name, tenantId FROM users WHERE tenantId = ?', [Number(tenantId)]);
 
   const results = [];
   let totalCarried = 0;

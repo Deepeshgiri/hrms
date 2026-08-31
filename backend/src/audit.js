@@ -26,12 +26,13 @@ export async function logAudit(req, { action, entityType, entityId = null, descr
       '127.0.0.1';
 
     const userAgent = (req?.headers?.['user-agent'] || '').slice(0, 255);
+    const tenantId = req?.user?.tenantId || 1;
 
     const jsonDetails = details ? JSON.stringify(details) : null;
 
     await pool.query(
-      `INSERT INTO audit_logs (userId, userName, userEmail, userRole, action, entityType, entityId, description, details, ipAddress, userAgent)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO audit_logs (userId, userName, userEmail, userRole, action, entityType, entityId, description, details, ipAddress, userAgent, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         userName,
@@ -44,6 +45,7 @@ export async function logAudit(req, { action, entityType, entityId = null, descr
         jsonDetails,
         ipAddress,
         userAgent,
+        tenantId,
       ]
     );
   } catch (err) {

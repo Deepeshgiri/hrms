@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { pool } from './db.js';
 import { presenceStore } from './redis.js';
+import { JWT_SECRET } from './auth.js';
 
 let ioInstance = null;
 
@@ -30,7 +31,7 @@ export function initSocket(httpServer) {
         return next(new Error('Authentication token required'));
       }
 
-      const secret = process.env.JWT_SECRET || 'secret';
+      const secret = JWT_SECRET;
       const decoded = jwt.verify(token, secret);
 
       const userId = decoded.userId || decoded.id;

@@ -1,3 +1,5 @@
+import { environment } from '../environments/environment';
+
 export const AppConstants = {
-  API_URL: '/api/',
+  API_URL: environment.apiUrl
 };
